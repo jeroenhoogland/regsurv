@@ -7,9 +7,10 @@
 rcs(x, knots = stats::quantile(x, probs = c(0, 0.1, 0.5, 0.9, 1)))
 }
 \arguments{
-\item{x}{numeric}
+\item{x}{numeric vector}
 
-\item{knots}{numeric}
+\item{knots}{numeric vector including at least 3 unique knot locations of increasing order,
+with the outer ones indicating the boundary knots.}
 }
 \value{
 matrix of basis columns
