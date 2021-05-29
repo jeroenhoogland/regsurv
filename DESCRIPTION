@@ -1,13 +1,18 @@
 Package: regsurv
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Regularized parametric survival modeling
+Version: 0.1
 Authors@R: 
     person(given = "Jeroen",
            family = "Hoogland",
            role = c("aut", "cre"),
            email = "j.hoogland-2@umcutrecht.nl",
            comment = c(ORCID = "0000-0002-2397-6052"))
-Description: What the package does (one paragraph).
+Description: Provides functions to develop regularized flexible hazard and cumulative hazard models
+    on right-censored survival data. Implemented regularization options include lasso, ridge, 
+    elastic net and groups lasso penalties, which may be combined within a single model. Flexible 
+    refers to spline-based baseline hazard or cumulative baseline hazard specification. The default
+    is to model proportional covariate effects, but the regsurv package allows for easy incorporation 
+    of time varying effects.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
