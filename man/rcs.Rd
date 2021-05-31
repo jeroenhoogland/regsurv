@@ -2,7 +2,7 @@
 % Please edit documentation in R/rcs.R
 \name{rcs}
 \alias{rcs}
-\title{Restricted cubic splines basis functions}
+\title{Generate restricted cubic spline (rcs)  basis matrix}
 \usage{
 rcs(x, knots = stats::quantile(x, probs = c(0, 0.1, 0.5, 0.9, 1)))
 }

@@ -1,6 +1,6 @@
 Package: regsurv
 Title: Regularized parametric survival modeling
-Version: 0.1
+Version: 0.0.0.9000
 Authors@R: 
     person(given = "Jeroen",
            family = "Hoogland",
@@ -19,5 +19,11 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Suggests: 
+    splines2,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Imports: 
+    CVXR,
+    gaussquad
+Depends: 
+    R (>= 2.10)

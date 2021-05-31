@@ -1,4 +1,4 @@
-#' Restricted cubic splines basis functions
+#' Generate restricted cubic spline (rcs)  basis matrix
 #'
 #' Takes a numeric vector and a sequence of knots to generate restricted cubic splines basis
 #' columns based on a truncated power series (as described in section 2.4.5 of the second edition of
@@ -56,5 +56,23 @@ rcs <- function(x, knots = stats::quantile(x, probs=c(0,0.1,0.5,0.9,1))){
   tau <- (knots[k] - knots[1])^2
   X[ ,2:(k-1)] <- X[ ,2:(k-1)] / tau # scale such that all cols are on scale of X
 
+  return(X)
+}
+
+
+# derivative of rcs()
+drcs <- function(x, knots=quantile(x, probs=c(0,0.1,0.5,0.9,1))){
+  k <- length(knots)
+  X <- matrix(NA, nrow = length(x), ncol = k-1)
+  X[ , 1] <- 1
+  for(j in 1:(k-2)){
+    scale1 <- (knots[k] - knots[j]) / (knots[k] - knots[k-1])
+    scale2 <- (knots[k-1] - knots[j]) / (knots[k] - knots[k-1])
+    X[ ,j+1] <- 3*pmax(0, x - knots[j])^2 -
+      3*pmax(0, x - knots[k-1])^2 * scale1 +
+      3*pmax(0, x - knots[k])^2 * scale2
+  }
+  tau <- (knots[k] - knots[1])^2
+  X[ ,2:(k-1)] <- X[ ,2:(k-1)] / tau
   return(X)
 }
