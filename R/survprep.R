@@ -23,6 +23,14 @@
 #' @export
 #'
 #' @examples
+#' prep <- survprep(tte=simdata$eventtime,
+#'                  delta=simdata$status,
+#'                  X=as.matrix(simdata[ ,grep("x", names(simdata))]),
+#'                  model.scale="loghazard",
+#'                  time.scale="time",
+#'                  spline.type="rcs",
+#'                  ntimebasis=4,
+#'                  qpoints=9)
 survprep <- function(tte, delta, X,
                      model.scale=c("loghazard", "logHazard"),
                      time.scale=c("logtime", "time"),
@@ -63,6 +71,8 @@ survprep <- function(tte, delta, X,
 
   if(!is.null(nitimebasis) & !is.numeric(nitimebasis)){
     stop("nitimebasis should be a numeric vector")
+  } else if (!is.null(nitimebasis) & is.null(tv)){
+    stop("nitimebasis specified in absence of any no time dependent variables (tv)")
   }
 
   if(time.scale == "logtime"){tte <- log(tte)}
@@ -144,7 +154,7 @@ survprep <- function(tte, delta, X,
 
   if(model.scale == "loghazard"){
     # Gauss-Legendre weights and evaluation points for the log hazard
-    rule <- gaussquad::legendre.quadrature.rules(qpoints)[[qpoints]]
+    rule <- legendre.quadrature.rules(qpoints)[[qpoints]]
 
     if(time.scale == "time"){
       glsbi <- lapply(1:nrow(X), function(i)

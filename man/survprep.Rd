@@ -56,3 +56,13 @@ an object of class survprep
 \description{
 Prepare data for regsurv()
 }
+\examples{
+prep <- survprep(tte=simdata$eventtime,
+                 delta=simdata$status,
+                 X=as.matrix(simdata[ ,grep("x", names(simdata))]),
+                 model.scale="loghazard",
+                 time.scale="time",
+                 spline.type="rcs",
+                 ntimebasis=4,
+                 qpoints=9)
+}

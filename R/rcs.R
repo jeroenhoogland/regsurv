@@ -61,7 +61,7 @@ rcs <- function(x, knots = stats::quantile(x, probs=c(0,0.1,0.5,0.9,1))){
 
 
 # derivative of rcs()
-drcs <- function(x, knots=quantile(x, probs=c(0,0.1,0.5,0.9,1))){
+drcs <- function(x, knots=stats::quantile(x, probs=c(0,0.1,0.5,0.9,1))){
   k <- length(knots)
   X <- matrix(NA, nrow = length(x), ncol = k-1)
   X[ , 1] <- 1

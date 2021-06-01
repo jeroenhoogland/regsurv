@@ -10,7 +10,15 @@ A data frame with 250 rows and 12 columns
 \item{id}{identifier}
 \item{eventtime}{eventtime}
 \item{status}{status indicator (1=event, 0=censored)}
-\item{x1-x9}{covariates 1-9}
+\item{x1}{covariates 1}
+\item{x2}{covariates 2}
+\item{x3}{covariates 3}
+\item{x4}{covariates 4}
+\item{x5}{covariates 5}
+\item{x6}{covariates 6}
+\item{x7}{covariates 7}
+\item{x8}{covariates 8}
+\item{x9}{covariates 9}
 }
 }
 \usage{
