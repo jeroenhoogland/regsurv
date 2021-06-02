@@ -1,4 +1,52 @@
-regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE, ...){
+#' Regularized parametric survival modeling
+#'
+#' @param prep an object of class survprep
+#' @param penpars numeric vector indicating penalized (1) and unpenalized (0) parameters. The order should follow the order the survprep
+#'   model matrix
+#' @param l1l2 numeric vector indicating lasso (1 or TRUE) or ridge (0 or FALSE) penalty per parameter; order as for penpars
+#' @param lambda.grid a grid of lambda values may be specified manually here. Default behavior is to fit all models from lambda
+#'   equal to exp(-6) up to the moment where all lasso penalized parameters have disappeared and all the absolute
+#'   value of all ridge penalized parameters is < 1e-2.
+#' @param print if TRUE, prints progress (a line for each lambda for which the model was optimized)
+#'
+#' @return an object of class regsurv
+#'  \item{optimal}{TRUE when the optimization converged to an optimal value for each lambda}
+#'  \item{lambda.grid}{grid of lambda values}
+#'  \item{obj.value}{objective function values per lambda}
+#'  \item{betahat}{matrix of model coefficients with different parameters in rows and a column per
+#'   lambda value}
+#'  \item{num.iters}{number of iterations needed to reach the optimal solution (per lambda)}
+#'  \item{solve.times}{solve times per lambda}
+#'  \item{which.param}{includes 3 lists: the first with baseline model parameter indices, the
+#'  second with main effect parameter indices, and the third with parameter indices for
+#'  time-varying effect parameters}
+#'
+#' @export
+#'
+#' @examples
+#' prep <- survprep(tte=simdata$eventtime,
+#'                  delta=simdata$status,
+#'                  X=as.matrix(simdata[ ,grep("x", names(simdata))]),
+#'                  model.scale="loghazard",
+#'                  time.scale="time",
+#'                  spline.type="rcs",
+#'                  ntimebasis=4,
+#'                  qpoints=9)
+#' # e.g. penalize all parameters but the intercept
+#' # note that prep$which.param includes 3 lists: the first with baseline model parameters, the
+#' # second with main effect parameters, and the third with parameters for time-varying effects
+#' penpars <- c(rep(TRUE, length(prep$which.param[[1]])),
+#'              rep(TRUE, length(unlist(prep$which.param[2:3]))))
+#' penpars[1] <- FALSE # do not penalize the intercept parameter
+#'
+#' # and use ridge for baseline parameters and lasso for all other parameters
+#' l1l2 <- c(rep(0, length(unlist(prep$which.param[1]))),
+#'           rep(1, length(unlist(prep$which.param[2:3]))))
+#'
+#' # fit model over the default lambda grid
+#' mod <- regsurv(prep, penpars, l1l2, print=TRUE)
+#' plot(mod)
+regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
 
   if(class(prep) != "survprep"){
     stop("regsurv only takes objects of class survprep as a first argument")

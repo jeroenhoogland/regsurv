@@ -2,4 +2,5 @@
 
 S3method(plot,regsurv)
 export(rcs)
+export(regsurv)
 export(survprep)
