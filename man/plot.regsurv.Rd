@@ -4,12 +4,14 @@
 \alias{plot.regsurv}
 \title{Plot coefficients stored in a regsurv object}
 \usage{
-\method{plot}{regsurv}(x, incl.baseline = FALSE, ...)
+\method{plot}{regsurv}(x, incl.baseline = FALSE, scaled.betas = FALSE, ...)
 }
 \arguments{
 \item{x}{regsurv object}
 
 \item{incl.baseline}{whether to include the parameters that relate to the baseline hazard or baseline cumulative hazard}
+
+\item{scaled.betas}{plots coefficients for scaled columns of the design matrix if TRUE}
 
 \item{...}{additional arguments that are passed along to matplot()}
 }
