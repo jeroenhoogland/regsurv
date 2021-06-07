@@ -84,6 +84,8 @@ predict.regsurv <- function(object, prep, lambda.index, newdata=NULL, type=c("cu
     sbt <- sbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
                knots=prep$knots, iknots=prep$iknots, spline.type=spline.type)
 
+    sbt$d[ ,-1] <- scale(sbt$d[ ,-1])
+
     if(prep$spline.type == "rcs"){
       if(type=="cumhazard"){return(exp(sbt$d %*% betahat))}
       if(type=="surv"){return(exp(-exp(sbt$d %*% betahat)))}
