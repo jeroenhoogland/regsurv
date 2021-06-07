@@ -199,7 +199,7 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
   num.iters <- sapply(sol, function(x) x$num_iters)
   solve.times <- sapply(sol, function(x) x$solve_time)
   obj.value <- sapply(sol, function(x) x$value)
-  betahat <- betahat.scaled <- sapply(sol, function(x) x$getValue(beta))
+  betahat <- sapply(sol, function(x) x$getValue(beta))
 
   if(prep$model.scale == "loghazard"){
     betahat.scaled <- betahat
@@ -207,14 +207,19 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
     betahat[-1, ] <- betahat.scaled[-1, ] / prep$scales
   }
   if(prep$model.scale == "logHazard"){
-    betahat.scaled.excl.offset <- betahat
-    betahat.scaled <- betahat
-    betahat.scaled[2, ] <- betahat.scaled[2, ] + prep$scales["basis1"]
-    betahat.scaled[1, ] <- betahat.scaled[1, ] + prep$shifts["basis1"]
+    if(prep$spline.type == "rcs"){
+      betahat.scaled <- betahat
+      betahat.scaled[2, ] <- betahat.scaled[2, ] + prep$scales["basis1"]
+      betahat.scaled[1, ] <- betahat.scaled[1, ] + prep$shifts["basis1"]
 
-    betahat <- betahat.scaled
-    betahat[1, ] <- betahat.scaled[1, ] - as.vector(prep$shifts / prep$scales) %*% betahat.scaled[-1, ]
-    betahat[-1, ] <- betahat.scaled[-1, ] / prep$scales
+      betahat <- betahat.scaled
+      betahat[1, ] <- betahat.scaled[1, ] - as.vector(prep$shifts / prep$scales) %*% betahat.scaled[-1, ]
+      betahat[-1, ] <- betahat.scaled[-1, ] / prep$scales
+    } else {
+      betahat.scaled <- betahat
+      betahat[1, ] <- betahat.scaled[1, ] - as.vector(prep$shifts / prep$scales) %*% betahat.scaled[-1, ]
+      betahat[-1, ] <- betahat.scaled[-1, ] / prep$scales
+    }
   }
 
   return(
