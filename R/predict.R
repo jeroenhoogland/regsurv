@@ -30,7 +30,7 @@ predict.regsurv <- function(object, prep, lambda.index, newdata=NULL, type=c("cu
     qpoints <- prep$qpoints
     rule <- legendre.quadrature.rules(qpoints)[[qpoints]]
   }
-  betahat <- mod$betahat.scaled[ ,lambda.index]
+  betahat <- as.matrix(mod$betahat.scaled)[ ,lambda.index]
 
   if(is.null(newdata)){
     X <- prep$sbt$d[ ,prep$which.param[[2]]]
@@ -80,7 +80,7 @@ predict.regsurv <- function(object, prep, lambda.index, newdata=NULL, type=c("cu
     if(type=="surv"){return(exp(-sapply(glsbi, integrate, param=betahat)))}
   }
 
-  if(prep$model.scale == "loghazard"){
+  if(prep$model.scale == "logHazard"){
     sbt <- sbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
                knots=prep$knots, iknots=prep$iknots, spline.type=spline.type)
 
