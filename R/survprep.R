@@ -130,6 +130,8 @@ survprep <- function(tte, delta, X,
     warning("The number of itime.knots was reduced to a set with unique elements")
   }
 
+  survprep.id <- stats::runif(1)
+
   sbt <- sbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
              knots=knots, iknots=iknots, spline.type=spline.type)
 
@@ -169,7 +171,7 @@ survprep <- function(tte, delta, X,
         z <- sbi(t=y, X=Xi, time.type=time.type, itime.type=itime.type, tv=tv,
                  knots=knots, iknots=iknots, spline.type=spline.type)$d
         z[ ,-1] <- t((t(z[ ,-1]) - shifts) / scales)
-        list(w=rule$w, lambda=lambda, z = z)
+        list(w=rule$w, lambda=lambda, z=z)
       })
     } else { # so for logtime
       glsbi <- lapply(1:nrow(X), function(i)
@@ -184,7 +186,7 @@ survprep <- function(tte, delta, X,
         z <- sbi(t=log(y), X=Xi, time.type=time.type, itime.type=itime.type, tv=tv,
                  knots=knots, iknots=iknots, spline.type=spline.type)$d
         z[ ,-1] <- t((t(z[ ,-1]) - shifts) / scales)
-        list(w=rule$w, lambda=lambda, z = z)
+        list(w=rule$w, lambda=lambda, z=z)
       })
     }
 
@@ -214,7 +216,11 @@ survprep <- function(tte, delta, X,
            "parameters"=parameters,
            "knots"=knots,
            "iknots"=iknots,
-           "qpoints"=qpoints),
+           "qpoints"=qpoints,
+           "time.type"=time.type,
+           "itime.type"=itime.type,
+           "tv"=tv,
+           "survprep.id"=survprep.id),
         class="survprep"))
   }
 
@@ -242,7 +248,11 @@ survprep <- function(tte, delta, X,
          "which.param"=which.param,
          "parameters"=parameters,
          "knots"=knots,
-         "iknots"=iknots),
+         "iknots"=iknots,
+         "time.type"=time.type,
+         "itime.type"=itime.type,
+         "tv"=tv,
+         "survprep.id"=survprep.id),
         class="survprep"))
   }
 }
@@ -255,7 +265,7 @@ sbi <- function(t, X, time.type, itime.type, tv=NULL, knots=NULL, iknots=NULL, s
     basis <- NULL
   }
 
-  if (time.type=="linear"){
+  if(time.type=="linear"){
     basis <- t
   }
 

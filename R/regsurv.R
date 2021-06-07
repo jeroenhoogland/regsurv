@@ -231,7 +231,8 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
            betahat.scaled=betahat.scaled,
            num.iters=num.iters,
            solve.times=solve.times,
-           which.param=prep$which.param),
+           which.param=prep$which.param,
+           survprep.id=prep$survprep.id),
       class="regsurv"))
 }
 
