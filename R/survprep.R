@@ -18,6 +18,8 @@
 #'     effects. Defaults to equally spaced knots (if NULL).
 #' @param qpoints number of quadrature points for numerical integration over time (only applicable
 #'     for models on the log hazard scale)
+#' @param scales only used for internal functions
+#' @param shifts only used for internal functions
 #'
 #' @return an object of class survprep
 #' @export
@@ -38,7 +40,9 @@ survprep <- function(tte, delta, X,
                      ntimebasis, time.knots=NULL,
                      tv=NULL,
                      nitimebasis=NULL, itime.knots=NULL,
-                     qpoints=9){
+                     qpoints=9,
+                     scales=NULL,
+                     shifts=NULL){
 
   if(spline.type=="ns"){
     if (!requireNamespace("splines", quietly = TRUE)) {
@@ -151,8 +155,12 @@ survprep <- function(tte, delta, X,
 
   parameters <- c(alpha,beta,gamma)
 
-  scales <- attr(scale(sbt$d[ ,-1]), "scaled:scale")
-  shifts <- attr(scale(sbt$d[ ,-1]), "scaled:center")
+  if(is.null(scales)){
+    scales <- attr(scale(sbt$d[ ,-1]), "scaled:scale")
+  }
+  if(is.null(shifts)){
+    shifts <- attr(scale(sbt$d[ ,-1]), "scaled:center")
+  }
 
   if(model.scale == "loghazard"){
     # Gauss-Legendre weights and evaluation points for the log hazard
@@ -191,7 +199,7 @@ survprep <- function(tte, delta, X,
     }
 
     sbt.scaled <- sbt
-    sbt.scaled$d[ ,-1] <- scale(sbt.scaled$d[ ,-1])
+    sbt.scaled$d[ ,-1] <- t((t(sbt.scaled$d[ ,-1]) - shifts) / scales)
 
     l <- sapply(glsbi, function(x) x$lambda)
     wl <- rep(rule$w, length(delta)) * rep(l, each=length(rule$w))
@@ -214,6 +222,7 @@ survprep <- function(tte, delta, X,
            "z"=z,
            "which.param"=which.param,
            "parameters"=parameters,
+           "X"=X,
            "knots"=knots,
            "iknots"=iknots,
            "qpoints"=qpoints,
@@ -227,7 +236,7 @@ survprep <- function(tte, delta, X,
   if(model.scale == "logHazard"){
 
     sbt.scaled <- sbt
-    sbt.scaled$d[ ,-1] <- scale(sbt.scaled$d[ ,-1])
+    sbt.scaled$d[ ,-1] <- t((t(sbt.scaled$d[ ,-1]) - shifts) / scales)
 
     dsbt <- dsbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
                  knots=knots, iknots=iknots, spline.type=spline.type)
@@ -247,6 +256,7 @@ survprep <- function(tte, delta, X,
          "shifts"=shifts,
          "which.param"=which.param,
          "parameters"=parameters,
+         "X"=X,
          "knots"=knots,
          "iknots"=iknots,
          "time.type"=time.type,

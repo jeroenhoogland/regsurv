@@ -200,6 +200,7 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
   solve.times <- sapply(sol, function(x) x$solve_time)
   obj.value <- sapply(sol, function(x) x$value)
   betahat <- sapply(sol, function(x) x$getValue(beta))
+  rownames(betahat) <- colnames(prep$sbt$d)
 
   if(prep$model.scale == "loghazard"){
     betahat.scaled <- betahat
@@ -232,6 +233,8 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
            num.iters=num.iters,
            solve.times=solve.times,
            which.param=prep$which.param,
+           penpars=penpars,
+           l1l2=l1l2,
            survprep.id=prep$survprep.id),
       class="regsurv"))
 }

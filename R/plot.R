@@ -7,9 +7,10 @@
 #'
 #' @return Nothing. Side-effect: plot.
 #' @export
+#' @method plot regsurv
 plot.regsurv <- function(x, incl.baseline=FALSE, scaled.betas=FALSE, ...){
 
-  if(class(x) != "regsurv"){
+  if(!"regsurv" %in% class(x)){
     stop("plot.regsurv only takes objects of class regsurv as a first argument")
   }
 
@@ -36,6 +37,41 @@ plot.regsurv <- function(x, incl.baseline=FALSE, scaled.betas=FALSE, ...){
   arguments <- Reduce(utils::modifyList, list(defaults, list(...)))
 
   do.call(graphics::matplot, arguments)
+}
+
+#' Plot cv.regsurv object
+#'
+#' @param x cv.regsurv object
+#' @param ... .. additional arguments that are passed along to plot()
+#'
+#' @return Nothing. Side-effect: plot.
+#' @export
+#' @method plot cv.regsurv
+plot.cv.regsurv <- function(x, ...){
+
+  if(!"cv.regsurv" %in% class(x)){
+    stop("plot.cv.regsurv only takes objects of class cv.regsurv as a first argument")
+  }
+
+  y <- apply(x$oosll, 1, mean)
+  cvup <- y + stats::qnorm(0.975) * x$cvsd
+  cvlo <- y - stats::qnorm(0.975) * x$cvsd
+
+  defaults <- list(x=log(x$lambda.grid),
+                   y=y,
+                   pch=19,
+                   col="red",
+                   ylim=range(c(cvup, cvlo)),
+                   ylab="Deviance",
+                   xlab="log(lambda)",
+                   main="")
+
+  arguments <- Reduce(utils::modifyList, list(defaults, list(...)))
+
+  do.call(graphics::plot, arguments)
+  graphics::arrows(x0=log(x$lambda.grid), y0=cvlo, y1=cvup, col="grey", code=3, angle=90, length = .04)
+  lambda.min.index <- which(x$cvm == max(x$cvm))
+  graphics::abline(v=log(x$lambda.grid[lambda.min.index]), lty=3, lwd=1.2)
 }
 
 

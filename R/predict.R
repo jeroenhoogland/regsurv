@@ -10,7 +10,16 @@
 #'
 #' @return prediction of the requested type
 #' @export
+#' @method predict regsurv
 predict.regsurv <- function(object, prep, lambda.index, newdata=NULL, type=c("cumhazard", "surv"), ...){
+
+  if(class(object) != "regsurv"){
+    stop("predict.regsurv only takes objects of class regsurv as a first argument")
+  }
+
+  if(class(prep) != "survprep"){
+    stop("regsurv only takes objects of class survprep as a second argument")
+  }
 
   if(prep$survprep.id != object$survprep.id){
     stop("regsurv object and survprep object do not match")
@@ -84,7 +93,7 @@ predict.regsurv <- function(object, prep, lambda.index, newdata=NULL, type=c("cu
     sbt <- sbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
                knots=prep$knots, iknots=prep$iknots, spline.type=spline.type)
 
-    sbt$d[ ,-1] <- scale(sbt$d[ ,-1])
+    sbt$d[ ,-1] <- t((t(sbt$d[ ,-1]) - shifts) / scales)
 
     if(prep$spline.type == "rcs"){
       if(type=="cumhazard"){return(exp(sbt$d %*% betahat))}

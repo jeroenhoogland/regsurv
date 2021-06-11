@@ -16,7 +16,9 @@ survprep(
   tv = NULL,
   nitimebasis = NULL,
   itime.knots = NULL,
-  qpoints = 9
+  qpoints = 9,
+  scales = NULL,
+  shifts = NULL
 )
 }
 \arguments{
@@ -49,6 +51,10 @@ effects. Defaults to equally spaced knots (if NULL).}
 
 \item{qpoints}{number of quadrature points for numerical integration over time (only applicable
 for models on the log hazard scale)}
+
+\item{scales}{only used for internal functions}
+
+\item{shifts}{only used for internal functions}
 }
 \value{
 an object of class survprep
