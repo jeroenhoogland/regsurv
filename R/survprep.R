@@ -63,6 +63,10 @@ survprep <- function(tte, delta, X,
     stop("X should be a matrix")
   }
 
+  if(length(colnames(X)) != ncol(X)){
+    stop("supply colnames for X")
+  }
+
   if(!is.numeric(ntimebasis)){
     stop("ntimebasis should be a numeric vector")
   }
@@ -77,6 +81,10 @@ survprep <- function(tte, delta, X,
     stop("nitimebasis should be a numeric vector")
   } else if (!is.null(nitimebasis) & is.null(tv)){
     stop("nitimebasis specified in absence of any no time dependent variables (tv)")
+  }
+
+  if(model.scale=="logHazard" & ntimebasis == 0){
+    stop("log cumulative hazard models should have at least one basis column to represent time")
   }
 
   if(time.scale == "logtime"){tte <- log(tte)}
@@ -136,12 +144,12 @@ survprep <- function(tte, delta, X,
 
   survprep.id <- stats::runif(1)
 
-  sbt <- sbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
+  mm <- sbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
              knots=knots, iknots=iknots, spline.type=spline.type)
 
-  alpha <- rep(0, sbt$nbasis+1)
-  beta <- rep(0, sbt$p)
-  gamma <- rep(0, sbt$nibasis)
+  alpha <- rep(0, mm$nbasis+1)
+  beta <- rep(0, mm$p)
+  gamma <- rep(0, mm$nibasis)
 
   if(length(gamma) == 0){
     which.param <- list(1:length(alpha),
@@ -156,10 +164,10 @@ survprep <- function(tte, delta, X,
   parameters <- c(alpha,beta,gamma)
 
   if(is.null(scales)){
-    scales <- attr(scale(sbt$d[ ,-1]), "scaled:scale")
+    scales <- attr(scale(mm$d[ ,-1]), "scaled:scale")
   }
   if(is.null(shifts)){
-    shifts <- attr(scale(sbt$d[ ,-1]), "scaled:center")
+    shifts <- attr(scale(mm$d[ ,-1]), "scaled:center")
   }
 
   if(model.scale == "loghazard"){
@@ -198,8 +206,8 @@ survprep <- function(tte, delta, X,
       })
     }
 
-    sbt.scaled <- sbt
-    sbt.scaled$d[ ,-1] <- t((t(sbt.scaled$d[ ,-1]) - shifts) / scales)
+    mm.scaled <- mm
+    mm.scaled$d[ ,-1] <- t((t(mm.scaled$d[ ,-1]) - shifts) / scales)
 
     l <- sapply(glsbi, function(x) x$lambda)
     wl <- rep(rule$w, length(delta)) * rep(l, each=length(rule$w))
@@ -213,7 +221,8 @@ survprep <- function(tte, delta, X,
            "spline.type"=spline.type,
            "tte"=tte, # NB is log(tte) when time.scale equals "logtime"
            "delta"=delta,
-           "sbt"=sbt.scaled,
+           "mm"=mm,
+           "mm.scaled"=mm.scaled,
            "scales"=scales,
            "shifts"=shifts,
            "w"=rule$w,
@@ -235,13 +244,13 @@ survprep <- function(tte, delta, X,
 
   if(model.scale == "logHazard"){
 
-    sbt.scaled <- sbt
-    sbt.scaled$d[ ,-1] <- t((t(sbt.scaled$d[ ,-1]) - shifts) / scales)
+    mm.scaled <- mm
+    mm.scaled$d[ ,-1] <- t((t(mm.scaled$d[ ,-1]) - shifts) / scales)
 
-    dsbt <- dsbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
+    dmm <- dsbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
                  knots=knots, iknots=iknots, spline.type=spline.type)
-    dsbt.scaled <- dsbt
-    dsbt.scaled$d[ ,-1] <- t(t(dsbt.scaled$d[ ,-1]) / scales[grep("basis", names(scales))])
+    dmm.scaled <- dmm
+    dmm.scaled$d[ ,-1] <- t(t(dmm.scaled$d[ ,-1]) / scales[grep("basis", names(scales))])
 
     return(
       structure(
@@ -250,8 +259,10 @@ survprep <- function(tte, delta, X,
          "spline.type"=spline.type,
          "tte"=tte, # NB is log(tte) when time.scale equals "logtime"
          "delta"=delta,
-         "sbt"=sbt.scaled,
-         "dsbt"=dsbt.scaled,
+         "mm"=mm,
+         "dmm"=dmm,
+         "mm.scaled"=mm.scaled,
+         "dmm.scaled"=dmm.scaled,
          "scales"=scales,
          "shifts"=shifts,
          "which.param"=which.param,

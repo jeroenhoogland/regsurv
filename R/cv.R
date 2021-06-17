@@ -1,4 +1,27 @@
-cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, print=FALSE){
+#' Title
+#'
+#' @param object an object of class regsurv
+#' @param prep an object of class survprep
+#' @param nfolds number of cross-validation folds
+#' @param plot plots deviance versus log(lambda) if TRUE
+#' @param force.nnhazards the force.nnhazards status as used for regsurv() is always maintained during cross-validation, but the
+#'   force.nnhazards parameter in cv.regsurv() allows to force these constraints on the whole sample (TRUE) (as opposed to just
+#'   the in-fold cases (when FALSE)).
+#' @param print prints progress if TRUE
+#' @param feastol the tolerance on the primal and dual residual, default 1e-8
+#' @param ... other parameters (only used by internal functions)
+#'
+#' @return
+#'  \item{oosll}{out-of-sample log-likelihood}
+#'  \item{cvm}{mean oosll per lambda}
+#'  \item{cvsd}{sd of oosll per lambda}
+#'  \item{msdr}{mean squared deviance residuals per lambda}
+#'  \item{lambda.grid}{sed grid of lambda values (taken to be the same as those used to fit to regsurv model)}
+#'  \item{lambda.min}{lambda value minimizing the (out-of-sample) deviance}
+#'  \item{lambda.min.index}{index for the value of lambda minimizing the (out-of-sample) deviance}
+
+#' @export
+cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE, print=FALSE, feastol=1e-08, ...){
 
   if(class(object) != "regsurv"){
     stop("predict.regsurv only takes objects of class regsurv as a first argument")
@@ -14,11 +37,15 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, print=FALSE){
 
   mod <- object
 
-  nrows <- nrow(prep$sbt$d)
+  nrows <- nrow(prep$mm.scaled$d)
   sampled.rows <- sample(1:nrows, nrows, replace = FALSE)
-  cv.index <- oosll <- mr <- list()
+  cv.index <- oosll <- deviance.res <- list()
   for(i in 1:nfolds){
     cv.index[[i]] <- sampled.rows[1:nrows %% nfolds + 1 == i]
+  }
+
+  if(min(sapply(cv.index, function(x) sum(prep$delta[x]))) < 5){
+    warning("some folds contain <5 events")
   }
 
   if(prep$time.scale == "logtime"){
@@ -44,9 +71,18 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, print=FALSE){
   i=1
   for(i in 1:nfolds){
 
+    if(ncol(as.matrix(prep$X)) == 1){
+      Xin <- as.matrix(prep$X[-cv.index[[i]]])
+      colnames(Xin) <- colnames(prep$X)
+    } else {
+      Xin <- as.matrix(prep$X[-cv.index[[i]], ])
+      colnames(Xin) <- colnames(prep$X)
+    }
+
+    # prep for in-sample cases
     prep.cv <- survprep(tte=tte[-cv.index[[i]]],
                         delta=prep$delta[-cv.index[[i]]],
-                        X=prep$X[-cv.index[[i]], ],
+                        X=Xin,
                         model.scale=prep$model.scale,
                         time.scale=prep$time.scale,
                         spline.type=prep$spline.type,
@@ -55,11 +91,42 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, print=FALSE){
                         nitimebasis=nitimebasis,
                         qpoints=qpoints)
 
-    cv <- regsurv(prep=prep.cv, penpars=mod$penpars, l1l2=mod$l1l2, lambda.grid=mod$lambda.grid)
+    prep.constrainst <- survprep(tte=tte,
+                                delta=prep$delta,
+                                X=as.matrix(prep$X),
+                                model.scale=prep$model.scale,
+                                time.scale=prep$time.scale,
+                                spline.type=prep$spline.type,
+                                ntimebasis=ntimebasis,
+                                time.knots=prep.cv$knots,
+                                tv=prep$tv,
+                                nitimebasis=nitimebasis,
+                                itime.knots=prep.cv$iknots,
+                                qpoints=qpoints,
+                                scales=prep.cv$scales,
+                                shifts=prep.cv$shifts)
 
+    if(prep$model.scale == "logHazard" & force.nnhazards){
+      broad.Xd <- as.matrix(prep.constrainst$dmm.scaled$d)
+      cv <- regsurv(prep=prep.cv, penpars=mod$penpars, l1l2=mod$l1l2, lambda.grid=mod$lambda.grid,
+                    force.nnhazards=mod$force.nnhazards, cv.constraint=broad.Xd, feastol=feastol)
+    } else {
+      cv <- regsurv(prep=prep.cv, penpars=mod$penpars, l1l2=mod$l1l2, lambda.grid=mod$lambda.grid,
+                    force.nnhazards=mod$force.nnhazards, feastol=feastol)
+    }
+
+    # prep for out-of-sample cases
+    # takes care to use the estimated knots, iknots, scales, and shifts as in prep.cv
+    if(ncol(as.matrix(prep$X)) == 1){
+      Xout <- as.matrix(prep$X[cv.index[[i]]])
+      colnames(Xout) <- colnames(prep$X)
+    } else {
+      Xout <- as.matrix(prep$X[cv.index[[i]], ])
+      colnames(Xout) <- colnames(prep$X)
+    }
     check <- survprep(tte=tte[cv.index[[i]]],
                       delta=prep$delta[cv.index[[i]]],
-                      X=prep$X[cv.index[[i]], ],
+                      X=Xout,
                       model.scale=prep$model.scale,
                       time.scale=prep$time.scale,
                       spline.type=prep$spline.type,
@@ -74,37 +141,49 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, print=FALSE){
 
     if(prep$model.scale == "loghazard"){
       oosll[[i]] <- sapply(1:length(cv$lambda.grid), function(x){
-                      with(check, loss.hazard(beta=cv$betahat.scaled[ ,x], X=sbt$d, delta=delta, z=z, wl=wl))})
+                      with(check, loss.hazard(beta=cv$betahat.scaled[ ,x], X=mm.scaled$d, delta=delta, z=z, wl=wl))})
     }
 
     if(prep$model.scale == "logHazard"){
+      ag.index <- c(prep.cv$which.param[[1]], prep.cv$which.param[[3]])
       if(prep$time.scale == "time"){
         oosll[[i]] <- sapply(1:length(cv$lambda.grid), function(x){
-          deltaloghazard <- with(check, sbt$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] + tte[delta == 1] +  # NB the offset doesn't cancel in case of linear time
-                                   log(dsbt$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][c(prep.cv$which.param[[1]], prep.cv$which.param[[3]])] + 1))
-          cumhazard <- with(check, exp(sbt$d %*% cv$betahat.scaled[ ,x] + tte))
+          deltaloghazard <- with(check, mm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] + tte[delta == 1] +  # NB the offset doesn't cancel in case of linear time
+                                   log(dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1))
+          cumhazard <- with(check, exp(mm.scaled$d %*% cv$betahat.scaled[ ,x] + tte))
           sum(deltaloghazard) - sum(cumhazard)})
       } else {
         oosll[[i]] <- sapply(1:length(cv$lambda.grid), function(x){
-          deltaloghazard <- with(check, sbt$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] +
-                                   log(dsbt$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][c(prep.cv$which.param[[1]], prep.cv$which.param[[3]])] + 1))
-          cumhazard <- with(check, exp(sbt$d %*% cv$betahat.scaled[ ,x] + tte))
+          deltaloghazard <- with(check, mm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] +
+                                   log(dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1))
+          cumhazard <- with(check, exp(mm.scaled$d %*% cv$betahat.scaled[ ,x] + tte))
           sum(deltaloghazard) - sum(cumhazard)})
       }
     }
 
-    mrj <- list()
+    # deviance residuals
+    deviance.res.j <- list()
+    j=1
     for(j in 1:length(cv$lambda.grid)){
       if(prep$time.scale == "logtime"){
-        preptte <- exp(check$tte)
+        checktte <- exp(check$tte)
       } else {
-        preptte <- check$tte
+        checktte <- check$tte
       }
-      pred <- predict.regsurv(cv, prep.cv, lambda.index=j, newdata=as.matrix(cbind(preptte, check$X)), type=c("cumhazard"))
-      # mrj[[j]] <- mean((pred - check$delta)^2)
-      mrj[[j]] <- mean(abs(pred - check$delta))
+      pred <- predict.regsurv(cv, prep.cv, lambda.index=j, newdata=as.matrix(cbind(checktte, check$X)), type=c("cumhazard"))
+
+      # martingale residuals m
+      m <- check$delta - pred
+
+      # deviance residuals d
+      d <- sign(m) * sqrt(-2 * (m + check$delta * log(check$delta - m)))
+
+      # squared deviance residuals
+      deviance.res.j[[j]] <- mean(d^2)
+
     }
-    mr[[i]] <- unlist(mrj)
+
+    deviance.res[[i]] <- unlist(deviance.res.j)
 
     if(print){print(paste("fold",i,"finished"))}
   }
@@ -115,12 +194,17 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, print=FALSE){
   cvup <- cvm + cvsd
   cvlo <- cvm - cvsd
 
-  mr <- matrix(unlist(mr), nrow=length(mod$lambda.grid), ncol=nfolds)
+  msdr <- matrix(unlist(deviance.res), nrow=length(mod$lambda.grid), ncol=nfolds)
 
   if(plot){
-    plot(apply(oosll, 1, mean) ~ log(mod$lambda.grid), pch=19, col="red", ylim=range(c(cvup, cvlo)),
+    y <- apply(oosll, 1, mean)
+    yup <- -2*(y + stats::qnorm(0.975) * cvsd)
+    ylo <- -2*(y - stats::qnorm(0.975) * cvsd)
+    y <- -2*y
+
+    plot(y ~ log(mod$lambda.grid), pch=19, col="red", ylim=range(c(yup, ylo)),
          main="", xlab="log(lambda)", ylab="Deviance")
-    graphics::arrows(x0=log(mod$lambda.grid), y0=cvlo, y1=cvup, col="grey", code=3, angle=90, length = .04)
+    graphics::arrows(x0=log(mod$lambda.grid), y0=ylo, y1=yup, col="grey", code=3, angle=90, length = .04)
     lambda.min.index <- which(cvm == max(cvm))
     graphics::abline(v=log(mod$lambda.grid[lambda.min.index]), lty=3)
   }
@@ -130,7 +214,7 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, print=FALSE){
       list(oosll=oosll,
          cvm=cvm,
          cvsd=cvsd,
-         mr=mr,
+         msdr=msdr,
          lambda.grid=mod$lambda.grid,
          lambda.min=mod$lambda.grid[which(cvm == max(cvm))],
          lambda.min.index=which(cvm == max(cvm))),

@@ -42,10 +42,10 @@ predict.regsurv <- function(object, prep, lambda.index, newdata=NULL, type=c("cu
   betahat <- as.matrix(mod$betahat.scaled)[ ,lambda.index]
 
   if(is.null(newdata)){
-    X <- prep$sbt$d[ ,prep$which.param[[2]]]
+    X <- prep$mm$d[ ,prep$which.param[[2]], drop=FALSE]
     tte <- prep$tte
   } else {
-    X <- newdata[ ,-1]
+    X <- newdata[ ,-1, drop=FALSE]
     if(prep$time.scale == "logtime"){
       tte <- log(newdata[ ,1])
     } else {
@@ -95,13 +95,13 @@ predict.regsurv <- function(object, prep, lambda.index, newdata=NULL, type=c("cu
 
     sbt$d[ ,-1] <- t((t(sbt$d[ ,-1]) - shifts) / scales)
 
-    if(prep$spline.type == "rcs"){
-      if(type=="cumhazard"){return(exp(sbt$d %*% betahat))}
-      if(type=="surv"){return(exp(-exp(sbt$d %*% betahat)))}
-    } else {
+    # if(prep$spline.type == "rcs"){
+    #   if(type=="cumhazard"){return(exp(sbt$d %*% betahat))}
+    #   if(type=="surv"){return(exp(-exp(sbt$d %*% betahat)))}
+    # } else {
       if(type=="cumhazard"){return(exp(sbt$d %*% betahat + tte))}
       if(type=="surv"){return(exp(-exp(sbt$d %*% betahat + tte)))}
-    }
+    # }
   }
 }
 

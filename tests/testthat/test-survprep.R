@@ -8,7 +8,7 @@ test_that("expect output of class survprep for loghazard models", {
                    ntimebasis=4,
                    qpoints=9)
   expect_s3_class(prep, "survprep")
-  expect_equal(dim(prep$sbt$d), c(250, 14))
+  expect_equal(dim(prep$mm.scaled$d), c(250, 14))
 })
 
 test_that("expect output of class survprep for logHazard models", {
@@ -22,7 +22,7 @@ test_that("expect output of class survprep for logHazard models", {
                    tv=1,nitimebasis=2,
                    qpoints=9)
   expect_s3_class(prep, "survprep")
-  expect_equal(prep$sbt$nibasis, 4)
+  expect_equal(prep$mm.scaled$nibasis, 4)
 })
 
 test_that("expect output of class survprep for logHazard models", {
@@ -37,7 +37,7 @@ test_that("expect output of class survprep for logHazard models", {
                    nitimebasis=1,
                    qpoints=9)
   expect_s3_class(prep, "survprep")
-  expect_equal(prep$sbt$nibasis, 9)
+  expect_equal(prep$mm.scaled$nibasis, 9)
 })
 
 test_that("expect output of class survprep for logHazard models", {
@@ -47,13 +47,13 @@ test_that("expect output of class survprep for logHazard models", {
                    model.scale="logHazard",
                    time.scale="logtime",
                    spline.type="rcs",
-                   ntimebasis=0,
+                   ntimebasis=1,
                    tv=1,
                    nitimebasis=1,
                    qpoints=9)
   expect_s3_class(prep, "survprep")
-  expect_equal(prep$sbt$nbasis, 0)
-  expect_equal(prep$sbt$nibasis, 1)
+  expect_equal(prep$mm.scaled$nbasis, 1)
+  expect_equal(prep$mm.scaled$nibasis, 1)
 })
 
 test_that("expect output of class survprep for logHazard models", {
@@ -68,6 +68,6 @@ test_that("expect output of class survprep for logHazard models", {
                    nitimebasis=0,
                    qpoints=9)
   expect_s3_class(prep, "survprep")
-  expect_equal(prep$sbt$nbasis, 7)
-  expect_equal(prep$sbt$nibasis, 0)
+  expect_equal(prep$mm.scaled$nbasis, 7)
+  expect_equal(prep$mm.scaled$nibasis, 0)
 })

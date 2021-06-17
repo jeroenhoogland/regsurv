@@ -5,9 +5,14 @@
 #'   model matrix
 #' @param l1l2 numeric vector indicating lasso (1 or TRUE) or ridge (0 or FALSE) penalty per parameter; order as for penpars
 #' @param lambda.grid a grid of lambda values may be specified manually here. Default behavior is to fit all models from lambda
-#'   equal to exp(-6) up to the moment where all lasso penalized parameters have disappeared and all the absolute
+#'   equal to exp(-8) (default) up to the moment where all lasso penalized parameters have disappeared and all the absolute
 #'   value of all ridge penalized parameters is < 1e-2.
+#' @param lambda.init logarithm of the smallest lambda penalty in the grid. Defaults to -8. Only used when lambda.grid is NULL
+#' @param force.nnhazards if TRUE, forces non-negative hazards / monotone non-decreasing cumulative hazards (only applicable for log
+#'   cumulative hazard models)
 #' @param print if TRUE, prints progress (a line for each lambda for which the model was optimized)
+#' @param feastol the tolerance on the primal and dual residual, default 1e-8
+#' @param ... other parameters (only used by internal functions)
 #'
 #' @return an object of class regsurv
 #'  \item{optimal}{TRUE when the optimization converged to an optimal value for each lambda}
@@ -15,11 +20,17 @@
 #'  \item{obj.value}{objective function values per lambda}
 #'  \item{betahat}{matrix of model coefficients with different parameters in rows and a column per
 #'   lambda value}
+#'  \item{betahat.scaled}{matrix of model scaled coefficients with different parameters in rows and a column per
+#'   lambda value. These scaled coefficients go with the scaled model matrices in prep }
 #'  \item{num.iters}{number of iterations needed to reach the optimal solution (per lambda)}
 #'  \item{solve.times}{solve times per lambda}
 #'  \item{which.param}{includes 3 lists: the first with baseline model parameter indices, the
 #'  second with main effect parameter indices, and the third with parameter indices for
 #'  time-varying effect parameters}
+#'  \item{penpars}{1 for parameters that were penalized, 0 otherwise}
+#'  \item{l1l2}{l1l2 as used to fit the model}
+#'  \item{force.nnhazards}{force.nnhazards as used to fit the model}
+#'  \item{survprep.id}{id that matches the id of survprep used to fit this model}
 #'
 #' @export
 #'
@@ -46,13 +57,16 @@
 #' # fit model over the default lambda grid
 #' mod <- regsurv(prep, penpars, l1l2, print=TRUE)
 #' plot(mod)
-regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
+regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force.nnhazards=TRUE,
+                    print=FALSE, feastol=1e-08, ...){
 
   if(class(prep) != "survprep"){
     stop("regsurv only takes objects of class survprep as a first argument")
   }
 
-  X <- as.matrix(prep$sbt$d)
+  args <- list(...)
+
+  X <- as.matrix(prep$mm.scaled$d)
   p <- length(prep$parameters)
   beta <- CVXR::Variable(p)
   delta <- prep$delta
@@ -79,7 +93,7 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
 
     sol <- list()
     if(is.null(lambda.grid)){
-      lambda.grid <- exp(-6)
+      lambda.grid <- exp(lambda.init)
       cont <- TRUE
       i=1
       while(cont){
@@ -99,7 +113,7 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
         }
         cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
         if(cont){
-          lambda.grid <- c(lambda.grid, exp(-6+i))
+          lambda.grid <- c(lambda.grid, exp(lambda.init+i))
           i <- i+1
         }
       }
@@ -124,7 +138,16 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
 
   if(prep$model.scale == "logHazard"){
     ag.index <- c(prep$which.param[[1]], prep$which.param[[3]])
-    Xd <- as.matrix(prep$dsbt$d)
+    Xd <- as.matrix(prep$dmm.scaled$d)
+
+    if(force.nnhazards){
+      if("cv.constraint" %in% names(args)){
+        broad.Xd <- args[[which(names(args) == "cv.constraint")]]
+        constraint <- -(broad.Xd %*% beta[ag.index] + 1) <= 0
+      } else {
+        constraint <- -(Xd %*% beta[ag.index] + 1) <= 0
+      }
+    }
 
     lambda <- pi
     if(prep$time.scale == "time"){
@@ -136,7 +159,11 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
         elastic_penalty(beta, penpars, lambda, l1l2)
     }
 
-    prob <- CVXR::Problem(CVXR::Maximize(obj))
+    if(force.nnhazards){
+      prob <- CVXR::Problem(CVXR::Maximize(obj), constraints = list(constraint))
+    } else {
+      prob <- CVXR::Problem(CVXR::Maximize(obj))
+    }
     prob_data <- CVXR::get_problem_data(prob, solver="ECOS")
 
     # prob_data$data$G@x has all information that depends on lambda
@@ -148,7 +175,7 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
 
     sol <- list()
     if(is.null(lambda.grid)){
-      lambda.grid <- exp(-6)
+      lambda.grid <- exp(lambda.init)
       cont <- TRUE
       i=1
       while(cont){
@@ -160,7 +187,8 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
                                                 h = prob_data$data$h,
                                                 dims = list(l=as.numeric(prob_data$data$dims@nonpos),
                                                             q=as.numeric(prob_data$data$dims@soc),
-                                                            e=as.numeric(prob_data$data$dims@exp)))
+                                                            e=as.numeric(prob_data$data$dims@exp),
+                                                control = ECOSolveR::ecos.control(feastol=feastol)))
         sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
         betahat <- sol[[i]]$getValue(beta)
         if(print){
@@ -168,11 +196,12 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
         }
         cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
         if(cont){
-          lambda.grid <- c(lambda.grid, exp(-6+i))
+          lambda.grid <- c(lambda.grid, exp(lambda.init+i))
           i <- i+1
         }
       }
     } else {
+      i=1
       for(i in 1:length(lambda.grid)){
         prob_data$data$G@x[ridge.index] <- -2*sqrt(lambda.grid[i])
         prob_data$data$G@x[lasso.index.plus] <- lambda.grid[i]
@@ -182,7 +211,8 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
                                                 h = prob_data$data$h,
                                                 dims = list(l=as.numeric(prob_data$data$dims@nonpos),
                                                             q=as.numeric(prob_data$data$dims@soc),
-                                                            e=as.numeric(prob_data$data$dims@exp)))
+                                                            e=as.numeric(prob_data$data$dims@exp),
+                                                control = ECOSolveR::ecos.control(feastol=feastol)))
         sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
         if(print){
           print(paste("solved for lambda", i, "out of", length(lambda.grid)))
@@ -200,7 +230,7 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
   solve.times <- sapply(sol, function(x) x$solve_time)
   obj.value <- sapply(sol, function(x) x$value)
   betahat <- sapply(sol, function(x) x$getValue(beta))
-  rownames(betahat) <- colnames(prep$sbt$d)
+  rownames(betahat) <- colnames(prep$mm.scaled$d)
 
   if(prep$model.scale == "loghazard"){
     betahat.scaled <- betahat
@@ -208,18 +238,32 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
     betahat[-1, ] <- betahat.scaled[-1, ] / prep$scales
   }
   if(prep$model.scale == "logHazard"){
-    if(prep$spline.type == "rcs"){
+    if(prep$time.type == "linear"){
+      betahat.scaled.excl.offset <- betahat
+
       betahat.scaled <- betahat
       betahat.scaled[2, ] <- betahat.scaled[2, ] + prep$scales["basis1"]
       betahat.scaled[1, ] <- betahat.scaled[1, ] + prep$shifts["basis1"]
+      betahat[1, ] <- betahat.scaled[1, ] - as.vector(prep$shifts / prep$scales) %*% betahat.scaled[-1, ]
+      betahat[-1, ] <- betahat.scaled[-1, ] / prep$scales
 
-      betahat <- betahat.scaled
-      betahat[1, ] <- betahat.scaled[1, ] - as.vector(prep$shifts / prep$scales) %*% betahat.scaled[-1, ]
-      betahat[-1, ] <- betahat.scaled[-1, ] / prep$scales
+      betahat.scaled <- betahat.scaled.excl.offset
     } else {
-      betahat.scaled <- betahat
-      betahat[1, ] <- betahat.scaled[1, ] - as.vector(prep$shifts / prep$scales) %*% betahat.scaled[-1, ]
-      betahat[-1, ] <- betahat.scaled[-1, ] / prep$scales
+      if(prep$spline.type == "rcs"){
+        betahat.scaled.excl.offset <- betahat
+
+        betahat.scaled <- betahat
+        betahat.scaled[2, ] <- betahat.scaled[2, ] + prep$scales["basis1"]
+        betahat.scaled[1, ] <- betahat.scaled[1, ] + prep$shifts["basis1"]
+        betahat[1, ] <- betahat.scaled[1, ] - as.vector(prep$shifts / prep$scales) %*% betahat.scaled[-1, ]
+        betahat[-1, ] <- betahat.scaled[-1, ] / prep$scales
+
+        betahat.scaled <- betahat.scaled.excl.offset
+      } else {
+        betahat.scaled <- betahat
+        betahat[1, ] <- betahat.scaled[1, ] - as.vector(prep$shifts / prep$scales) %*% betahat.scaled[-1, ]
+        betahat[-1, ] <- betahat.scaled[-1, ] / prep$scales
+      }
     }
   }
 
@@ -235,6 +279,7 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, print=FALSE){
            which.param=prep$which.param,
            penpars=penpars,
            l1l2=l1l2,
+           force.nnhazards=force.nnhazards,
            survprep.id=prep$survprep.id),
       class="regsurv"))
 }

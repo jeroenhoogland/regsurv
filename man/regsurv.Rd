@@ -4,7 +4,17 @@
 \alias{regsurv}
 \title{Regularized parametric survival modeling}
 \usage{
-regsurv(prep, penpars, l1l2, lambda.grid = NULL, print = FALSE)
+regsurv(
+  prep,
+  penpars,
+  l1l2,
+  lambda.grid = NULL,
+  lambda.init = -8,
+  force.nnhazards = TRUE,
+  print = FALSE,
+  feastol = 1e-08,
+  ...
+)
 }
 \arguments{
 \item{prep}{an object of class survprep}
@@ -15,10 +25,19 @@ model matrix}
 \item{l1l2}{numeric vector indicating lasso (1 or TRUE) or ridge (0 or FALSE) penalty per parameter; order as for penpars}
 
 \item{lambda.grid}{a grid of lambda values may be specified manually here. Default behavior is to fit all models from lambda
-equal to exp(-6) up to the moment where all lasso penalized parameters have disappeared and all the absolute
+equal to exp(-8) (default) up to the moment where all lasso penalized parameters have disappeared and all the absolute
 value of all ridge penalized parameters is < 1e-2.}
 
+\item{lambda.init}{logarithm of the smallest lambda penalty in the grid. Defaults to -8. Only used when lambda.grid is NULL}
+
+\item{force.nnhazards}{if TRUE, forces non-negative hazards / monotone non-decreasing cumulative hazards (only applicable for log
+cumulative hazard models)}
+
 \item{print}{if TRUE, prints progress (a line for each lambda for which the model was optimized)}
+
+\item{feastol}{the tolerance on the primal and dual residual, default 1e-8}
+
+\item{...}{other parameters (only used by internal functions)}
 }
 \value{
 an object of class regsurv
@@ -27,11 +46,17 @@ an object of class regsurv
 \item{obj.value}{objective function values per lambda}
 \item{betahat}{matrix of model coefficients with different parameters in rows and a column per
 lambda value}
+\item{betahat.scaled}{matrix of model scaled coefficients with different parameters in rows and a column per
+lambda value. These scaled coefficients go with the scaled model matrices in prep }
 \item{num.iters}{number of iterations needed to reach the optimal solution (per lambda)}
 \item{solve.times}{solve times per lambda}
 \item{which.param}{includes 3 lists: the first with baseline model parameter indices, the
 second with main effect parameter indices, and the third with parameter indices for
 time-varying effect parameters}
+\item{penpars}{1 for parameters that were penalized, 0 otherwise}
+\item{l1l2}{l1l2 as used to fit the model}
+\item{force.nnhazards}{force.nnhazards as used to fit the model}
+\item{survprep.id}{id that matches the id of survprep used to fit this model}
 }
 \description{
 Regularized parametric survival modeling

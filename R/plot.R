@@ -54,8 +54,9 @@ plot.cv.regsurv <- function(x, ...){
   }
 
   y <- apply(x$oosll, 1, mean)
-  cvup <- y + stats::qnorm(0.975) * x$cvsd
-  cvlo <- y - stats::qnorm(0.975) * x$cvsd
+  cvup <- -2*(y + stats::qnorm(0.975) * x$cvsd)
+  cvlo <- -2*(y - stats::qnorm(0.975) * x$cvsd)
+  y <- -2*y
 
   defaults <- list(x=log(x$lambda.grid),
                    y=y,
