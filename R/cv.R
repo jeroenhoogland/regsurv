@@ -68,6 +68,7 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
     nitimebasis <- length(prep$which.param[[3]]) / length(prep$tv)
   }
 
+  check.negative.hazards.global <- list()
   i=1
   for(i in 1:nfolds){
 
@@ -147,9 +148,17 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
     if(prep$model.scale == "logHazard"){
       ag.index <- c(prep.cv$which.param[[1]], prep.cv$which.param[[3]])
       if(prep$time.scale == "time"){
+        check.negative.hazards.global[[i]] <- any(with(check, dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ag.index,] + 1) < 0)
         oosll[[i]] <- sapply(1:length(cv$lambda.grid), function(x){
-          deltaloghazard <- with(check, mm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] + tte[delta == 1] +  # NB the offset doesn't cancel in case of linear time
-                                   log(dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1))
+          check.negative.hazards <- any(with(check, dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1) < 0)
+          if(check.negative.hazards){
+            suppressWarnings(deltaloghazard <- with(check, mm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] + tte[delta == 1] +
+                                       log(dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1)))
+            deltaloghazard <- ifelse(is.na(deltaloghazard), min(deltaloghazard, na.rm=TRUE), deltaloghazard)
+          } else {
+            deltaloghazard <- with(check, mm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] + tte[delta == 1] +  # NB the offset doesn't cancel in case of linear time
+                                     log(dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1))
+          }
           cumhazard <- with(check, exp(mm.scaled$d %*% cv$betahat.scaled[ ,x] + tte))
           sum(deltaloghazard) - sum(cumhazard)})
       } else {
@@ -207,6 +216,11 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
     graphics::arrows(x0=log(mod$lambda.grid), y0=ylo, y1=yup, col="grey", code=3, angle=90, length = .04)
     lambda.min.index <- which(cvm == max(cvm))
     graphics::abline(v=log(mod$lambda.grid[lambda.min.index]), lty=3)
+  }
+
+  if(any(unlist(check.negative.hazards.global))){
+    warning("Model resulted in negative out-of-sample hazards which were set to the lowest valid value in the sample.
+            Use force.nnhazards=TRUE to add the necesssary constraints")
   }
 
   return(
