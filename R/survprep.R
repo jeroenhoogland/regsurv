@@ -338,14 +338,16 @@ sbi <- function(t, X, time.type, itime.type, tv=NULL, knots=NULL, iknots=NULL, s
       colnames(d) <- c("int", colnames(X))
     } else {
       colnames(d) <- c("int", colnames(X),
-                       paste0("ibasis", 1:(ncol(ibasis)*ncol(as.matrix(X[ ,tv])))))
+                       paste0(rep(paste0("ibasis", 1:ncol(ibasis)), times=length(tv)),
+                              rep(colnames(as.matrix(X[ ,tv])), each=ncol(ibasis))))
     }
   } else {
     if(itime.type=="none"){
       colnames(d) <- c("int", paste0("basis", 1:ncol(as.matrix(basis))), colnames(X))
     } else {
       colnames(d) <- c("int", paste0("basis", 1:ncol(as.matrix(basis))), colnames(X),
-                       paste0("ibasis", 1:(ncol(ibasis)*ncol(as.matrix(X[ ,tv])))))
+                       paste0(rep(paste0("ibasis", 1:ncol(ibasis)), times=length(tv)),
+                              rep(colnames(as.matrix(X[ ,tv])), each=ncol(ibasis))))
     }
   }
 
@@ -354,6 +356,7 @@ sbi <- function(t, X, time.type, itime.type, tv=NULL, knots=NULL, iknots=NULL, s
          p=ncol(X),
          nibasis=ifelse(!is.null(ibasis), ncol(ibasis)*ncol(as.matrix(X[ ,tv])), 0)))
 }
+
 
 dsbi <- function(t, X, time.type, itime.type, tv, knots=NULL, iknots=NULL, spline.type=NULL){
 
@@ -414,14 +417,16 @@ dsbi <- function(t, X, time.type, itime.type, tv, knots=NULL, iknots=NULL, splin
     if(itime.type=="none"){
       colnames(d) <- c("int")
     } else {
-      colnames(d) <- c("int", paste0("ibasis", 1:(ncol(ibasis)*ncol(as.matrix(X[ ,tv])))))
+      colnames(d) <- c("int", paste0(rep(paste0("ibasis", 1:ncol(ibasis)), times=length(tv)),
+                                     rep(colnames(as.matrix(X[ ,tv])), each=ncol(ibasis))))
     }
   } else {
     if(itime.type=="none"){
       colnames(d) <- c("int", paste0("basis", 1:ncol(as.matrix(basis))))
     } else {
       colnames(d) <- c("int", paste0("basis", 1:ncol(as.matrix(basis))),
-                       paste0("ibasis", 1:(ncol(ibasis)*ncol(as.matrix(X[ ,tv])))))
+                       paste0(rep(paste0("ibasis", 1:ncol(ibasis)), times=length(tv)),
+                              rep(colnames(as.matrix(X[ ,tv])), each=ncol(ibasis))))
     }
   }
 

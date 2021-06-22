@@ -22,7 +22,7 @@ test_that("expect output of class survprep for logHazard models", {
                    tv=1,nitimebasis=2,
                    qpoints=9)
   expect_s3_class(prep, "survprep")
-  expect_equal(prep$mm.scaled$nibasis, 4)
+  expect_equal(prep$mm.scaled$nibasis, 2)
 })
 
 test_that("expect output of class survprep for logHazard models", {
@@ -71,3 +71,4 @@ test_that("expect output of class survprep for logHazard models", {
   expect_equal(prep$mm.scaled$nbasis, 7)
   expect_equal(prep$mm.scaled$nibasis, 0)
 })
+
