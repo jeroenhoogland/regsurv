@@ -320,6 +320,7 @@ sbi <- function(t, X, time.type, itime.type, tv=NULL, knots=NULL, iknots=NULL, s
       for(i in 2:(ncol(ibasis))){
           intbasis <- cbind(intbasis, ibasis[ ,i] * X[ ,tv])
       }
+      intbasis <- intbasis[ ,order(colnames(intbasis))]
       d <- cbind(1, basis, X, intbasis)
     }
 
@@ -329,6 +330,7 @@ sbi <- function(t, X, time.type, itime.type, tv=NULL, knots=NULL, iknots=NULL, s
       for(i in 2:(ncol(ibasis))){
           intbasis <- cbind(intbasis, ibasis[ ,i] * X[ ,tv])
       }
+      intbasis <- intbasis[ ,order(colnames(intbasis))]
       d <- cbind(1, basis, X, intbasis)
     }
   }
@@ -400,6 +402,7 @@ dsbi <- function(t, X, time.type, itime.type, tv, knots=NULL, iknots=NULL, splin
       for(i in 2:(ncol(ibasis))){
         intbasis <- cbind(intbasis, ibasis[ ,i] * X[ ,tv])
       }
+      intbasis <- intbasis[ ,order(colnames(intbasis))]
       d <- cbind(0, basis, intbasis)
     }
 
@@ -409,6 +412,7 @@ dsbi <- function(t, X, time.type, itime.type, tv, knots=NULL, iknots=NULL, splin
       for(i in 2:(ncol(ibasis))){
         intbasis <- cbind(intbasis, ibasis[ ,i] * X[ ,tv])
       }
+      intbasis <- intbasis[ ,order(colnames(intbasis))]
       d <- cbind(0, basis, intbasis)
     }
   }
