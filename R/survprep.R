@@ -128,7 +128,7 @@ survprep <- function(tte, delta, X,
         iknots <- itime.knots
       }
     } else{
-      iknot.quantiles <- seq(0,1,1/(ntimebasis))
+      iknot.quantiles <- seq(0,1,1/(nitimebasis))
       iknots <- stats::quantile(tte[delta==1], probs = iknot.quantiles)
     }
   }
