@@ -12,6 +12,7 @@ regsurv(
   lambda.init = -8,
   force.nnhazards = TRUE,
   print = FALSE,
+  maxit = 100L,
   feastol = 1e-08,
   ...
 )
@@ -34,6 +35,8 @@ value of all ridge penalized parameters is < 1e-2.}
 cumulative hazard models)}
 
 \item{print}{if TRUE, prints progress (a line for each lambda for which the model was optimized)}
+
+\item{maxit}{(integer) the maximum number of iterations for the (ecos) solver, default 100L}
 
 \item{feastol}{the tolerance on the primal and dual residual, default 1e-8}
 

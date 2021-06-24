@@ -8,7 +8,7 @@
 #'   force.nnhazards parameter in cv.regsurv() allows to force these constraints on the whole sample (TRUE) (as opposed to just
 #'   the in-fold cases (when FALSE)).
 #' @param print prints progress if TRUE
-#' @param (integer) maxit the maximum number of iterations for the (ecos) solver, default 100L
+#' @param maxit (integer) maxit the maximum number of iterations for the (ecos) solver, default 100L
 #' @param feastol the tolerance on the primal and dual residual, default 1e-8
 #' @param ... other parameters (only used by internal functions)
 #'

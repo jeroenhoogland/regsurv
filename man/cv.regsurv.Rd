@@ -11,6 +11,7 @@ cv.regsurv(
   plot = FALSE,
   force.nnhazards = TRUE,
   print = FALSE,
+  maxit = 100L,
   feastol = 1e-08,
   ...
 )
@@ -29,6 +30,8 @@ force.nnhazards parameter in cv.regsurv() allows to force these constraints on t
 the in-fold cases (when FALSE)).}
 
 \item{print}{prints progress if TRUE}
+
+\item{maxit}{(integer) maxit the maximum number of iterations for the (ecos) solver, default 100L}
 
 \item{feastol}{the tolerance on the primal and dual residual, default 1e-8}
 
