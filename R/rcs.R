@@ -19,9 +19,9 @@ rcs <- function(x, knots = stats::quantile(x, probs=c(0,0.1,0.5,0.9,1))){
     stop("x should be a numeric vector")
   }
 
-  if(length(x) < 2){
-    stop("x should have length >= 2")
-  }
+  # if(length(x) < 2){
+  #   stop("x should have length >= 2")
+  # }
 
   if(!is.numeric(knots)){
     stop("k should be a numeric vector")

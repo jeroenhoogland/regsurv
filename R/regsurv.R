@@ -11,6 +11,7 @@
 #' @param force.nnhazards if TRUE, forces non-negative hazards / monotone non-decreasing cumulative hazards (only applicable for log
 #'   cumulative hazard models)
 #' @param print if TRUE, prints progress (a line for each lambda for which the model was optimized)
+#' @param maxit (integer) the maximum number of iterations for the (ecos) solver, default 100L
 #' @param feastol the tolerance on the primal and dual residual, default 1e-8
 #' @param ... other parameters (only used by internal functions)
 #'
@@ -58,7 +59,7 @@
 #' mod <- regsurv(prep, penpars, l1l2, print=TRUE)
 #' plot(mod)
 regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force.nnhazards=TRUE,
-                    print=FALSE, feastol=1e-08, ...){
+                    print=FALSE, maxit=100L, feastol=1e-08, ...){
 
   if(class(prep) != "survprep"){
     stop("regsurv only takes objects of class survprep as a first argument")
@@ -105,7 +106,19 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force
                                                 h = prob_data$data$h,
                                                 dims = list(l=as.numeric(prob_data$data$dims@nonpos),
                                                             q=as.numeric(prob_data$data$dims@soc),
-                                                            e=as.numeric(prob_data$data$dims@exp)))
+                                                            e=as.numeric(prob_data$data$dims@exp)),
+                                                control=ecos.control(maxit = maxit))
+        # if(solver_output$retcodes["exitFlag"] != 0){
+        #   if(print){
+        #     print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+        #   }
+        #   warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
+        #   if(solver_output$retcodes["exitFlag"] == -1){
+        #     warning(paste("maximum number of iterations reached (exit flag -1)"))
+        #   } else {
+        #     warning(paste("refer to ecos exit codes"))
+        #   }
+        # }
         sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
         betahat <- sol[[i]]$getValue(beta)
         if(print){
@@ -127,7 +140,8 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force
                                                 h = prob_data$data$h,
                                                 dims = list(l=as.numeric(prob_data$data$dims@nonpos),
                                                             q=as.numeric(prob_data$data$dims@soc),
-                                                            e=as.numeric(prob_data$data$dims@exp)))
+                                                            e=as.numeric(prob_data$data$dims@exp)),
+                                                control=ecos.control(maxit = maxit))
         sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
         if(print){
           print(paste("solved for lambda", i, "out of", length(lambda.grid)))
@@ -188,7 +202,8 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force
                                                 dims = list(l=as.numeric(prob_data$data$dims@nonpos),
                                                             q=as.numeric(prob_data$data$dims@soc),
                                                             e=as.numeric(prob_data$data$dims@exp),
-                                                control = ECOSolveR::ecos.control(feastol=feastol)))
+                                                control = ECOSolveR::ecos.control(feastol=feastol)),
+                                                control=ecos.control(maxit = maxit))
         sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
         betahat <- sol[[i]]$getValue(beta)
         if(print){
@@ -212,7 +227,8 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force
                                                 dims = list(l=as.numeric(prob_data$data$dims@nonpos),
                                                             q=as.numeric(prob_data$data$dims@soc),
                                                             e=as.numeric(prob_data$data$dims@exp),
-                                                control = ECOSolveR::ecos.control(feastol=feastol)))
+                                                control = ECOSolveR::ecos.control(feastol=feastol)),
+                                                control=ecos.control(maxit = maxit))
         sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
         if(print){
           print(paste("solved for lambda", i, "out of", length(lambda.grid)))

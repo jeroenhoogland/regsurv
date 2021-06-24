@@ -8,6 +8,7 @@
 #'   force.nnhazards parameter in cv.regsurv() allows to force these constraints on the whole sample (TRUE) (as opposed to just
 #'   the in-fold cases (when FALSE)).
 #' @param print prints progress if TRUE
+#' @param (integer) maxit the maximum number of iterations for the (ecos) solver, default 100L
 #' @param feastol the tolerance on the primal and dual residual, default 1e-8
 #' @param ... other parameters (only used by internal functions)
 #'
@@ -21,7 +22,7 @@
 #'  \item{lambda.min.index}{index for the value of lambda minimizing the (out-of-sample) deviance}
 
 #' @export
-cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE, print=FALSE, feastol=1e-08, ...){
+cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE, print=FALSE, maxit=100L, feastol=1e-08, ...){
 
   if(class(object) != "regsurv"){
     stop("predict.regsurv only takes objects of class regsurv as a first argument")
@@ -110,10 +111,10 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
     if(prep$model.scale == "logHazard" & force.nnhazards){
       broad.Xd <- as.matrix(prep.constrainst$dmm.scaled$d)
       cv <- regsurv(prep=prep.cv, penpars=mod$penpars, l1l2=mod$l1l2, lambda.grid=mod$lambda.grid,
-                    force.nnhazards=mod$force.nnhazards, cv.constraint=broad.Xd, feastol=feastol)
+                    force.nnhazards=mod$force.nnhazards, maxit=maxit, cv.constraint=broad.Xd, feastol=feastol)
     } else {
       cv <- regsurv(prep=prep.cv, penpars=mod$penpars, l1l2=mod$l1l2, lambda.grid=mod$lambda.grid,
-                    force.nnhazards=mod$force.nnhazards, feastol=feastol)
+                    force.nnhazards=mod$force.nnhazards, maxit=maxit, feastol=feastol)
     }
 
     # prep for out-of-sample cases

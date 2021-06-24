@@ -90,18 +90,14 @@ predict.regsurv <- function(object, prep, lambda.index, newdata=NULL, type=c("cu
   }
 
   if(prep$model.scale == "logHazard"){
-    sbt <- sbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
+    mm <- sbi(t=tte, X=X, time.type=time.type, itime.type=itime.type, tv=tv,
                knots=prep$knots, iknots=prep$iknots, spline.type=spline.type)
 
-    sbt$d[ ,-1] <- t((t(sbt$d[ ,-1]) - shifts) / scales)
+    mm.scaled <- mm
+    mm.scaled$d[ ,-1] <- t((t(mm$d[ ,-1]) - shifts) / scales)
 
-    # if(prep$spline.type == "rcs"){
-    #   if(type=="cumhazard"){return(exp(sbt$d %*% betahat))}
-    #   if(type=="surv"){return(exp(-exp(sbt$d %*% betahat)))}
-    # } else {
-      if(type=="cumhazard"){return(exp(sbt$d %*% betahat + tte))}
-      if(type=="surv"){return(exp(-exp(sbt$d %*% betahat + tte)))}
-    # }
+    if(type=="cumhazard"){return(exp(mm.scaled$d %*% betahat + tte))}
+    if(type=="surv"){return(exp(-exp(mm.scaled$d %*% betahat + tte)))}
   }
 }
 
