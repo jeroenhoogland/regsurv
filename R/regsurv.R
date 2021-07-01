@@ -125,28 +125,30 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
                                                             q=as.numeric(prob_data$data$dims@soc),
                                                             e=as.numeric(prob_data$data$dims@exp)),
                                                 control=ECOSolveR::ecos.control(maxit = maxit))
-        # if(solver_output$retcodes["exitFlag"] != 0){
-        #   if(print){
-        #     print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
-        #   }
-        #   warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
-        #   if(solver_output$retcodes["exitFlag"] == -1){
-        #     warning(paste("maximum number of iterations reached (exit flag -1)"))
-        #   } else {
-        #     warning(paste("refer to ecos exit codes"))
-        #   }
-        # }
-        sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
-        betahat <- sol[[i]]$getValue(beta)
-        if(print){
-          print(paste0("solved for lambda = log(", log(lambda.grid[i]), ")"))
-        }
-        if(is.null(groups)){
-          cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+        if(solver_output$retcodes["exitFlag"] != 0){
+          if(print){
+            print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+          }
+          warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
+          if(solver_output$retcodes["exitFlag"] == -1){
+            warning(paste("maximum number of iterations reached (exit flag -1)"))
+          } else {
+            warning(paste("refer to ecos exit codes"))
+          }
+          cont <- TRUE
         } else {
-          pure.ridge.pars <- betahat[unlist(groups[penpars & l1l2==0])]
-          lasso.pars <- betahat[unlist(groups[penpars & l1l2!=0])]
-          cont <- !all(all(abs(lasso.pars) < 1e-8), all(abs(pure.ridge.pars) < 1e-2))
+          sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
+          betahat <- sol[[i]]$getValue(beta)
+          if(print){
+            print(paste0("solved for lambda = log(", log(lambda.grid[i]), ")"))
+          }
+          if(is.null(groups)){
+            cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+          } else {
+            pure.ridge.pars <- betahat[unlist(groups[penpars & l1l2==0])]
+            lasso.pars <- betahat[unlist(groups[penpars & l1l2!=0])]
+            cont <- !all(all(abs(lasso.pars) < 1e-8), all(abs(pure.ridge.pars) < 1e-2))
+          }
         }
         if(cont){
           lambda.grid <- c(lambda.grid, exp(lambda.init+i))
@@ -165,7 +167,20 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
                                                             q=as.numeric(prob_data$data$dims@soc),
                                                             e=as.numeric(prob_data$data$dims@exp)),
                                                 control=ECOSolveR::ecos.control(maxit = maxit))
-        sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
+        if(solver_output$retcodes["exitFlag"] != 0){
+          if(print){
+            print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+          }
+          warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
+          if(solver_output$retcodes["exitFlag"] == -1){
+            warning(paste("maximum number of iterations reached (exit flag -1)"))
+          } else {
+            warning(paste("refer to ecos exit codes"))
+          }
+          cont <- TRUE
+        } else {
+          sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
+        }
         if(print){
           print(paste("solved for lambda", i, "out of", length(lambda.grid)))
         }
@@ -237,17 +252,30 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
                                                             q=as.numeric(prob_data$data$dims@soc),
                                                             e=as.numeric(prob_data$data$dims@exp),
                                                 control = ECOSolveR::ecos.control(maxit = maxit, feastol=feastol)))
-        sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
-        betahat <- sol[[i]]$getValue(beta)
-        if(print){
-          print(paste0("solved for lambda = log(", log(lambda.grid[i]), ")"))
-        }
-        if(is.null(groups)){
-          cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+        if(solver_output$retcodes["exitFlag"] != 0){
+          if(print){
+            print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+          }
+          warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
+          if(solver_output$retcodes["exitFlag"] == -1){
+            warning(paste("maximum number of iterations reached (exit flag -1)"))
+          } else {
+            warning(paste("refer to ecos exit codes"))
+          }
+          cont <- TRUE
         } else {
-          pure.ridge.pars <- betahat[unlist(groups[penpars & l1l2==0])]
-          lasso.pars <- betahat[unlist(groups[penpars & l1l2!=0])]
-          cont <- !all(all(abs(lasso.pars) < 1e-8), all(abs(pure.ridge.pars) < 1e-2))
+          sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
+          betahat <- sol[[i]]$getValue(beta)
+          if(print){
+            print(paste0("solved for lambda = log(", log(lambda.grid[i]), ")"))
+          }
+          if(is.null(groups)){
+            cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+          } else {
+            pure.ridge.pars <- betahat[unlist(groups[penpars & l1l2==0])]
+            lasso.pars <- betahat[unlist(groups[penpars & l1l2!=0])]
+            cont <- !all(all(abs(lasso.pars) < 1e-8), all(abs(pure.ridge.pars) < 1e-2))
+          }
         }
         if(cont){
           lambda.grid <- c(lambda.grid, exp(lambda.init+i))
@@ -267,7 +295,45 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
                                                             q=as.numeric(prob_data$data$dims@soc),
                                                             e=as.numeric(prob_data$data$dims@exp),
                                                 control = ECOSolveR::ecos.control(maxit = maxit, feastol=feastol)))
-        sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
+        if(solver_output$retcodes["exitFlag"] != 0){
+          if(print){
+            print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+          }
+          warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
+          if(solver_output$retcodes["exitFlag"] == -1){
+            warning(paste("maximum number of iterations reached (exit flag -1)"))
+          } else {
+            warning(paste("refer to ecos exit codes"))
+          }
+          cont <- TRUE
+        } else {
+          sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
+          betahat <- sol[[i]]$getValue(beta)
+          if(print){
+            print(paste0("solved for lambda = log(", log(lambda.grid[i]), ")"))
+          }
+          if(is.null(groups)){
+            cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+          } else {
+            pure.ridge.pars <- betahat[unlist(groups[penpars & l1l2==0])]
+            lasso.pars <- betahat[unlist(groups[penpars & l1l2!=0])]
+            cont <- !all(all(abs(lasso.pars) < 1e-8), all(abs(pure.ridge.pars) < 1e-2))
+          }
+        }
+        if(solver_output$retcodes["exitFlag"] != 0){
+          if(print){
+            print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+          }
+          warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
+          if(solver_output$retcodes["exitFlag"] == -1){
+            warning(paste("maximum number of iterations reached (exit flag -1)"))
+          } else {
+            warning(paste("refer to ecos exit codes"))
+          }
+          cont <- TRUE
+        } else {
+          sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
+        }
         if(print){
           print(paste("solved for lambda", i, "out of", length(lambda.grid)))
         }
@@ -275,15 +341,15 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
     }
   }
 
-  status <- sapply(sol, function(x) x$status)
-  optimal <- all(status == "optimal")
+  status <- sapply(sol, function(x) if(!is.null(x)) x$status else NA)
+  optimal <- all(status[is.null(status)] == "optimal")
   if(!optimal){
     warning("solver did not find an optimal solution for all lambda's")
   }
-  num.iters <- sapply(sol, function(x) x$num_iters)
-  solve.times <- sapply(sol, function(x) x$solve_time)
-  obj.value <- sapply(sol, function(x) x$value)
-  betahat <- sapply(sol, function(x) x$getValue(beta))
+  num.iters <- sapply(sol, function(x) if(!is.null(x)) x$num_iters else NA)
+  solve.times <- sapply(sol, function(x) if(!is.null(x)) x$solve_time else NA)
+  obj.value <- sapply(sol, function(x) if(!is.null(x)) x$value else NA)
+  betahat <- sapply(sol, function(x) if(!is.null(x)) x$getValue(beta) else rep(NA, p))
   rownames(betahat) <- colnames(prep$mm.scaled$d)
 
   if(prep$model.scale == "loghazard"){
@@ -324,6 +390,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
   return(
     structure(
       list(optimal=optimal,
+           status=status,
            lambda.grid=lambda.grid,
            obj.value=obj.value,
            betahat=betahat,

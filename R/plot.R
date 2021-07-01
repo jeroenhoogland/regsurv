@@ -54,15 +54,15 @@ plot.cv.regsurv <- function(x, ...){
   }
 
   y <- apply(x$oosll, 1, mean)
-  cvup <- -2*(y + x$cvse)
-  cvlo <- -2*(y - x$cvse)
+  cvlo <- -2*(y + x$cvse)
+  cvup <- -2*(y - x$cvse)
   y <- -2*y
 
   defaults <- list(x=log(x$lambda.grid),
                    y=y,
                    pch=19,
                    col="red",
-                   ylim=range(c(cvup, cvlo)),
+                   ylim=range(c(cvup, cvlo), na.rm=TRUE),
                    ylab="Deviance",
                    xlab="log(lambda)",
                    main="")

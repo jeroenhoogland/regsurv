@@ -152,7 +152,7 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
         check.negative.hazards.global[[i]] <- any(with(check, dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ag.index,] + 1) < 0)
         oosll[[i]] <- sapply(1:length(cv$lambda.grid), function(x){
           check.negative.hazards <- any(with(check, dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1) < 0)
-          if(check.negative.hazards){
+          if(!is.na(check.negative.hazards) & check.negative.hazards){
             suppressWarnings(deltaloghazard <- with(check, mm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] + tte[delta == 1] +
                                        log(dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1)))
             deltaloghazard <- ifelse(is.na(deltaloghazard), min(deltaloghazard, na.rm=TRUE), deltaloghazard)
@@ -163,9 +163,17 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
           cumhazard <- with(check, exp(mm.scaled$d %*% cv$betahat.scaled[ ,x] + tte))
           sum(deltaloghazard) - sum(cumhazard)})
       } else {
+        check.negative.hazards.global[[i]] <- any(with(check, dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ag.index,] + 1) < 0)
         oosll[[i]] <- sapply(1:length(cv$lambda.grid), function(x){
-          deltaloghazard <- with(check, mm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] +
-                                   log(dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1))
+          check.negative.hazards <- any(with(check, dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1) < 0)
+          if(!is.na(check.negative.hazards) & check.negative.hazards){
+            suppressWarnings(deltaloghazard <- with(check, mm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] +
+                                   log(dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1)))
+            deltaloghazard <- ifelse(is.na(deltaloghazard), min(deltaloghazard, na.rm=TRUE), deltaloghazard)
+          } else {
+            deltaloghazard <- with(check, mm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x] +
+                                     log(dmm.scaled$d[delta == 1, ] %*% cv$betahat.scaled[ ,x][ag.index] + 1))
+          }
           cumhazard <- with(check, exp(mm.scaled$d %*% cv$betahat.scaled[ ,x] + tte))
           sum(deltaloghazard) - sum(cumhazard)})
       }
@@ -201,25 +209,30 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
   oosll <- matrix(unlist(oosll), nrow=length(mod$lambda.grid), ncol=nfolds)
   cvm <- apply(oosll, 1, mean)
   cvse <- apply(oosll, 1, stats::sd) / sqrt(nfolds)
+  cvm <- ifelse(abs(cvm) == Inf, NA, cvm)
+  cvse <- ifelse(abs(cvse) == Inf, NA, cvse)
   cvup <- cvm + cvse
   cvlo <- cvm - cvse
 
   msdr <- matrix(unlist(deviance.res), nrow=length(mod$lambda.grid), ncol=nfolds)
 
   if(plot){
-    y <- apply(oosll, 1, mean)
-    yup <- -2*(y + cvse)
-    ylo <- -2*(y - cvse)
+    y <- cvm
+    ylo <- -2*(y + cvse)
+    yup <- -2*(y - cvse)
     y <- -2*y
 
-    plot(y ~ log(mod$lambda.grid), pch=19, col="red", ylim=range(c(yup, ylo)),
+    plot(y ~ log(mod$lambda.grid), pch=19, col="red", ylim=range(c(yup, ylo), na.rm=TRUE),
          main="", xlab="log(lambda)", ylab="Deviance")
-    graphics::arrows(x0=log(mod$lambda.grid), y0=ylo, y1=yup, col="grey", code=3, angle=90, length = .04)
+    suppressWarnings(graphics::arrows(x0=log(mod$lambda.grid)[!is.na(ylo) & !is.na(yup)],
+                     y0=ylo[!is.na(ylo) & !is.na(yup)],
+                     y1=yup[!is.na(ylo) & !is.na(yup)],
+                     col="grey", code=3, angle=90, length = .04))
     lambda.min.index <- which(cvm == max(cvm))
     graphics::abline(v=log(mod$lambda.grid[lambda.min.index]), lty=3)
   }
 
-  if(any(unlist(check.negative.hazards.global))){
+  if(any(unlist(check.negative.hazards.global)[!is.na(unlist(check.negative.hazards.global))])){
     warning("Model resulted in negative out-of-sample hazards which were set to the lowest valid value in the sample.
             Use force.nnhazards=TRUE to add the necesssary constraints")
   }
