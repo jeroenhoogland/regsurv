@@ -40,7 +40,7 @@ the in-fold cases (when FALSE)).}
 \value{
 \item{oosll}{out-of-sample log-likelihood}
 \item{cvm}{mean oosll per lambda}
-\item{cvsd}{sd of oosll per lambda}
+\item{cvse}{se of oosll per lambda}
 \item{msdr}{mean squared deviance residuals per lambda}
 \item{lambda.grid}{sed grid of lambda values (taken to be the same as those used to fit to regsurv model)}
 \item{lambda.min}{lambda value minimizing the (out-of-sample) deviance}

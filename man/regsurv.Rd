@@ -8,8 +8,9 @@ regsurv(
   prep,
   penpars,
   l1l2,
+  groups = NULL,
   lambda.grid = NULL,
-  lambda.init = -8,
+  lambda.init = -6,
   force.nnhazards = TRUE,
   print = FALSE,
   maxit = 100L,
@@ -25,11 +26,14 @@ model matrix}
 
 \item{l1l2}{numeric vector indicating lasso (1 or TRUE) or ridge (0 or FALSE) penalty per parameter; order as for penpars}
 
+\item{groups}{list of groups of parameters for a group lasso penalty (e.g. a group of parameters related to a dummy coded multinomial
+variable or to spline basis columns). If specified, penpars and l1l2 should also be specified at the group level.}
+
 \item{lambda.grid}{a grid of lambda values may be specified manually here. Default behavior is to fit all models from lambda
-equal to exp(-8) (default) up to the moment where all lasso penalized parameters have disappeared and all the absolute
+equal to exp(-6) (default) up to the moment where all lasso penalized parameters have disappeared and all the absolute
 value of all ridge penalized parameters is < 1e-2.}
 
-\item{lambda.init}{logarithm of the smallest lambda penalty in the grid. Defaults to -8. Only used when lambda.grid is NULL}
+\item{lambda.init}{logarithm of the smallest lambda penalty in the grid. Defaults to -6. Only used when lambda.grid is NULL}
 
 \item{force.nnhazards}{if TRUE, forces non-negative hazards / monotone non-decreasing cumulative hazards (only applicable for log
 cumulative hazard models)}

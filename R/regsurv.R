@@ -4,10 +4,12 @@
 #' @param penpars numeric vector indicating penalized (1) and unpenalized (0) parameters. The order should follow the order the survprep
 #'   model matrix
 #' @param l1l2 numeric vector indicating lasso (1 or TRUE) or ridge (0 or FALSE) penalty per parameter; order as for penpars
+#' @param groups list of groups of parameters for a group lasso penalty (e.g. a group of parameters related to a dummy coded multinomial
+#'   variable or to spline basis columns). If specified, penpars and l1l2 should also be specified at the group level.
 #' @param lambda.grid a grid of lambda values may be specified manually here. Default behavior is to fit all models from lambda
-#'   equal to exp(-8) (default) up to the moment where all lasso penalized parameters have disappeared and all the absolute
+#'   equal to exp(-6) (default) up to the moment where all lasso penalized parameters have disappeared and all the absolute
 #'   value of all ridge penalized parameters is < 1e-2.
-#' @param lambda.init logarithm of the smallest lambda penalty in the grid. Defaults to -8. Only used when lambda.grid is NULL
+#' @param lambda.init logarithm of the smallest lambda penalty in the grid. Defaults to -6. Only used when lambda.grid is NULL
 #' @param force.nnhazards if TRUE, forces non-negative hazards / monotone non-decreasing cumulative hazards (only applicable for log
 #'   cumulative hazard models)
 #' @param print if TRUE, prints progress (a line for each lambda for which the model was optimized)
@@ -58,11 +60,20 @@
 #' # fit model over the default lambda grid
 #' mod <- regsurv(prep, penpars, l1l2, print=TRUE)
 #' plot(mod)
-regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force.nnhazards=TRUE,
+regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.init=-6, force.nnhazards=TRUE,
                     print=FALSE, maxit=100L, feastol=1e-08, ...){
 
   if(class(prep) != "survprep"){
     stop("regsurv only takes objects of class survprep as a first argument")
+  }
+
+  if(!is.null(groups)){
+    if(length(groups) != length(penpars)){
+      stop("when specifying groups, penpars should be specified per group")
+    }
+    if(length(groups) != length(l1l2)){
+      stop("when specifying groups, l1l2 should be specified per group")
+    }
   }
 
   args <- list(...)
@@ -79,8 +90,14 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force
     wl <-  prep$wl
 
     lambda <- pi
-    obj <- loss.hazard(beta, X, delta, z, wl) -
-      elastic_penalty(beta, penpars, lambda, l1l2)
+    if(is.null(groups)){
+      obj <- loss.hazard(beta=beta, X=X, delta=delta, z=z, wl=wl) -
+        elastic_penalty(beta=beta, penpars=penpars, l1l2=l1l2, lambda=lambda)
+    } else {
+      obj <- loss.hazard(beta=beta, X=X, delta=delta, z=z, wl=wl) -
+        gl_penalty(beta=beta, groups=groups, penpars=penpars, l1l2=l1l2, lambda=lambda)
+    }
+
     prob <- CVXR::Problem(CVXR::Maximize(obj))
     prob_data <- CVXR::get_problem_data(prob, solver="ECOS")
 
@@ -124,7 +141,13 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force
         if(print){
           print(paste0("solved for lambda = log(", log(lambda.grid[i]), ")"))
         }
-        cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+        if(is.null(groups)){
+          cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+        } else {
+          pure.ridge.pars <- betahat[unlist(groups[penpars & l1l2==0])]
+          lasso.pars <- betahat[unlist(groups[penpars & l1l2!=0])]
+          cont <- !all(all(abs(lasso.pars) < 1e-8), all(abs(pure.ridge.pars) < 1e-2))
+        }
         if(cont){
           lambda.grid <- c(lambda.grid, exp(lambda.init+i))
           i <- i+1
@@ -164,13 +187,24 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force
     }
 
     lambda <- pi
-    if(prep$time.scale == "time"){
-      obj <- loss.Hazard.time(beta, X, Xd, tte, delta, ag.index) -
-        elastic_penalty(beta, penpars, lambda, l1l2)
-    }
-    if (prep$time.scale == "logtime"){
-      obj <- loss.Hazard.logtime(beta, X, Xd, tte, delta, ag.index) -
-        elastic_penalty(beta, penpars, lambda, l1l2)
+    if(is.null(groups)){
+      if(prep$time.scale == "time"){
+        obj <- loss.Hazard.time(beta=beta, X=X, Xd=Xd, tte=tte, delta=delta, ag.index=ag.index) -
+          elastic_penalty(beta=beta, penpars=penpars, l1l2=l1l2, lambda=lambda)
+      }
+      if (prep$time.scale == "logtime"){
+        obj <- loss.Hazard.logtime(beta=beta, X=X, Xd=Xd, tte=tte, delta=delta, ag.index=ag.index) -
+          elastic_penalty(beta=beta, penpars=penpars, l1l2=l1l2, lambda=lambda)
+      }
+    } else {
+      if(prep$time.scale == "time"){
+        obj <- loss.Hazard.time(beta=beta, X=X, Xd=Xd, tte=tte, delta=delta, ag.index=ag.index) -
+          gl_penalty(beta=beta, groups=groups, penpars=penpars, l1l2=l1l2, lambda=lambda)
+      }
+      if (prep$time.scale == "logtime"){
+        obj <- loss.Hazard.logtime(beta=beta, X=X, Xd=Xd, tte=tte, delta=delta, ag.index=ag.index) -
+          gl_penalty(beta=beta, groups=groups, penpars=penpars, l1l2=l1l2, lambda=lambda)
+      }
     }
 
     if(force.nnhazards){
@@ -208,7 +242,13 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force
         if(print){
           print(paste0("solved for lambda = log(", log(lambda.grid[i]), ")"))
         }
-        cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+        if(is.null(groups)){
+          cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+        } else {
+          pure.ridge.pars <- betahat[unlist(groups[penpars & l1l2==0])]
+          lasso.pars <- betahat[unlist(groups[penpars & l1l2!=0])]
+          cont <- !all(all(abs(lasso.pars) < 1e-8), all(abs(pure.ridge.pars) < 1e-2))
+        }
         if(cont){
           lambda.grid <- c(lambda.grid, exp(lambda.init+i))
           i <- i+1
@@ -293,6 +333,7 @@ regsurv <- function(prep, penpars, l1l2, lambda.grid=NULL, lambda.init=-8, force
            which.param=prep$which.param,
            penpars=penpars,
            l1l2=l1l2,
+           groups=groups,
            force.nnhazards=force.nnhazards,
            survprep.id=prep$survprep.id),
       class="regsurv"))
@@ -318,11 +359,36 @@ loss.Hazard.logtime <- function(beta, X, Xd, tte, delta, ag.index){
   sum(deltaloghazard) - sum(cumhazard)
 }
 
-elastic_penalty <- function(beta, penpars, lambda, l1l2) {
+elastic_penalty <- function(beta, penpars, l1l2, lambda) {
   lambda <- penpars * lambda
   lambda[1] <- 0
   ridge <- .5 * CVXR::sum_squares(sqrt((1 - l1l2) * lambda) * beta)
   lasso <- CVXR::cvxr_norm((l1l2 * lambda) * beta, 1)
   lasso + ridge
 }
+
+gl_penalty <- function(beta, groups, penpars, l1l2, lambda) {
+  ngroups <- length(groups)
+  lambda <- penpars * lambda
+  lambda[1] <- 0
+  g=2
+  ridge <- .5 * CVXR::sum_squares(sqrt((1 - l1l2[g]) * lambda[g]) * beta[groups[[g]]])
+  if(length(groups[[g]]) == 1){
+    lasso <- CVXR::cvxr_norm((l1l2[g] * lambda[g]) * beta[groups[[g]]], 1)
+  } else {
+    lasso <- sqrt(length(groups[[g]])) * CVXR::cvxr_norm((l1l2[g] * lambda[g]) * beta[groups[[g]]], 2)
+  }
+  if(ngroups > 2){
+    for(g in 2:ngroups){
+      ridge <- ridge + .5 * CVXR::sum_squares(sqrt((1 - l1l2[g]) * lambda[g]) * beta[groups[[g]]])
+      if(length(groups[[g]]) == 1){
+        lasso <- lasso + CVXR::cvxr_norm((l1l2[g] * lambda[g]) * beta[groups[[g]]], 1)
+      } else {
+        lasso <- lasso + sqrt(length(groups[[g]])) * CVXR::cvxr_norm((l1l2[g] * lambda[g]) * beta[groups[[g]]], 2)
+      }
+    }
+  }
+  lasso + ridge
+}
+
 

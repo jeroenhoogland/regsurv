@@ -15,7 +15,7 @@
 #' @return
 #'  \item{oosll}{out-of-sample log-likelihood}
 #'  \item{cvm}{mean oosll per lambda}
-#'  \item{cvsd}{sd of oosll per lambda}
+#'  \item{cvse}{se of oosll per lambda}
 #'  \item{msdr}{mean squared deviance residuals per lambda}
 #'  \item{lambda.grid}{sed grid of lambda values (taken to be the same as those used to fit to regsurv model)}
 #'  \item{lambda.min}{lambda value minimizing the (out-of-sample) deviance}
@@ -45,9 +45,9 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
     cv.index[[i]] <- sampled.rows[1:nrows %% nfolds + 1 == i]
   }
 
-  if(min(sapply(cv.index, function(x) sum(prep$delta[x]))) < 5){
-    warning("some folds contain <5 events")
-  }
+  # if(min(sapply(cv.index, function(x) sum(prep$delta[x]))) < 5){
+  #   warning("some folds contain <5 events")
+  # }
 
   if(prep$time.scale == "logtime"){
     tte <- exp(prep$tte)
@@ -110,10 +110,10 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
 
     if(prep$model.scale == "logHazard" & force.nnhazards){
       broad.Xd <- as.matrix(prep.constrainst$dmm.scaled$d)
-      cv <- regsurv(prep=prep.cv, penpars=mod$penpars, l1l2=mod$l1l2, lambda.grid=mod$lambda.grid,
+      cv <- regsurv(prep=prep.cv, penpars=mod$penpars, l1l2=mod$l1l2, groups=mod$groups, lambda.grid=mod$lambda.grid,
                     force.nnhazards=mod$force.nnhazards, maxit=maxit, cv.constraint=broad.Xd, feastol=feastol)
     } else {
-      cv <- regsurv(prep=prep.cv, penpars=mod$penpars, l1l2=mod$l1l2, lambda.grid=mod$lambda.grid,
+      cv <- regsurv(prep=prep.cv, penpars=mod$penpars, l1l2=mod$l1l2, groups=mod$groups, lambda.grid=mod$lambda.grid,
                     force.nnhazards=mod$force.nnhazards, maxit=maxit, feastol=feastol)
     }
 
@@ -200,16 +200,16 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
 
   oosll <- matrix(unlist(oosll), nrow=length(mod$lambda.grid), ncol=nfolds)
   cvm <- apply(oosll, 1, mean)
-  cvsd <- apply(oosll, 1, stats::sd)
-  cvup <- cvm + cvsd
-  cvlo <- cvm - cvsd
+  cvse <- apply(oosll, 1, stats::sd) / sqrt(nfolds)
+  cvup <- cvm + cvse
+  cvlo <- cvm - cvse
 
   msdr <- matrix(unlist(deviance.res), nrow=length(mod$lambda.grid), ncol=nfolds)
 
   if(plot){
     y <- apply(oosll, 1, mean)
-    yup <- -2*(y + stats::qnorm(0.975) * cvsd)
-    ylo <- -2*(y - stats::qnorm(0.975) * cvsd)
+    yup <- -2*(y + cvse)
+    ylo <- -2*(y - cvse)
     y <- -2*y
 
     plot(y ~ log(mod$lambda.grid), pch=19, col="red", ylim=range(c(yup, ylo)),
@@ -228,7 +228,7 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
     structure(
       list(oosll=oosll,
          cvm=cvm,
-         cvsd=cvsd,
+         cvse=cvse,
          msdr=msdr,
          lambda.grid=mod$lambda.grid,
          lambda.min=mod$lambda.grid[which(cvm == max(cvm))],

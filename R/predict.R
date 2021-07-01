@@ -47,9 +47,9 @@ predict.regsurv <- function(object, prep, lambda.index, newdata=NULL, type=c("cu
   } else {
     X <- newdata[ ,-1, drop=FALSE]
     if(prep$time.scale == "logtime"){
-      tte <- log(newdata[ ,1])
+      tte <- as.vector(log(newdata[ ,1]))
     } else {
-      tte <- newdata[ ,1]
+      tte <- as.vector(newdata[ ,1])
     }
   }
 
@@ -104,5 +104,15 @@ predict.regsurv <- function(object, prep, lambda.index, newdata=NULL, type=c("cu
 
 integrate <- function(x, param){
   x$lambda * sum(x$w * exp(x$z %*% param))
+}
+
+
+get_ipred_data <- function(times, Xnew){
+  n <- nrow(Xnew)
+  Xnew <- Xnew[rep(1:nrow(Xnew), each=length(times)), ]
+  rep(times, times=nrow(Xnew))
+  cbind("id"=rep(1:n, each=length(times)),
+        "time"=rep(times, times=n),
+        as.matrix(Xnew))
 }
 
