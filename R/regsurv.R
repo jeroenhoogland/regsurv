@@ -151,7 +151,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
           }
         }
         if(cont){
-          lambda.grid <- c(lambda.grid, exp(lambda.init+i))
+          lambda.grid <- c(lambda.grid, exp(lambda.init+i*.25))
           i <- i+1
         }
       }
@@ -278,7 +278,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
           }
         }
         if(cont){
-          lambda.grid <- c(lambda.grid, exp(lambda.init+i))
+          lambda.grid <- c(lambda.grid, exp(lambda.init+i*.25))
           i <- i+1
         }
       }
