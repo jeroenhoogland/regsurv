@@ -245,7 +245,8 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
          msdr=msdr,
          lambda.grid=mod$lambda.grid,
          lambda.min=mod$lambda.grid[which(cvm == max(cvm, na.rm = TRUE))],
-         lambda.min.index=which(cvm == max(cvm, na.rm = TRUE))),
+         lambda.min.index=which(cvm == max(cvm, na.rm = TRUE)),
+         cv.index=cv.index),
       class=c("cv.regsurv")))
 }
 
