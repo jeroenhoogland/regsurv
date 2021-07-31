@@ -127,7 +127,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
                                                 control=ECOSolveR::ecos.control(maxit = maxit))
         if(solver_output$retcodes["exitFlag"] != 0){
           if(print){
-            print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+            print(paste0("NOT solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
           if(solver_output$retcodes["exitFlag"] == -1){
@@ -140,7 +140,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
           sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
           betahat <- sol[[i]]$getValue(beta)
           if(print){
-            print(paste0("solved for lambda = log(", log(lambda.grid[i]), ")"))
+            print(paste0("solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           if(is.null(groups)){
             cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
@@ -169,7 +169,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
                                                 control=ECOSolveR::ecos.control(maxit = maxit))
         if(solver_output$retcodes["exitFlag"] != 0){
           if(print){
-            print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+            print(paste0("NOT solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
           if(solver_output$retcodes["exitFlag"] == -1){
@@ -254,7 +254,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
                                                 control = ECOSolveR::ecos.control(maxit = maxit, feastol=feastol)))
         if(solver_output$retcodes["exitFlag"] != 0){
           if(print){
-            print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+            print(paste0("NOT solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
           if(solver_output$retcodes["exitFlag"] == -1){
@@ -267,7 +267,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
           sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
           betahat <- sol[[i]]$getValue(beta)
           if(print){
-            print(paste0("solved for lambda = log(", log(lambda.grid[i]), ")"))
+            print(paste0("solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           if(is.null(groups)){
             cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
@@ -297,7 +297,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
                                                 control = ECOSolveR::ecos.control(maxit = maxit, feastol=feastol)))
         if(solver_output$retcodes["exitFlag"] != 0){
           if(print){
-            print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+            print(paste0("NOT solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
           if(solver_output$retcodes["exitFlag"] == -1){
@@ -310,7 +310,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
           sol[[i]] <- CVXR::unpack_results(prob, solver_output, prob_data$chain, prob_data$inverse_data)
           betahat <- sol[[i]]$getValue(beta)
           if(print){
-            print(paste0("solved for lambda = log(", log(lambda.grid[i]), ")"))
+            print(paste0("solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           if(is.null(groups)){
             cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
@@ -322,7 +322,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
         }
         if(solver_output$retcodes["exitFlag"] != 0){
           if(print){
-            print(paste0("NOT solved for lambda = log(", log(lambda.grid[i]), ")"))
+            print(paste0("NOT solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           warning(paste("ecos exit flag ", solver_output$retcodes["exitFlag"], "for lambda.grid positition", i))
           if(solver_output$retcodes["exitFlag"] == -1){
@@ -341,6 +341,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
     }
   }
 
+  if(length(sol) == 0){stop("No solutions found")}
   status <- sapply(sol, function(x) if(!is.null(x)) x$status else NA)
   optimal <- all(status[is.null(status)] == "optimal")
   if(!optimal){
