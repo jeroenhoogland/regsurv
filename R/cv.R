@@ -93,22 +93,21 @@ cv.regsurv <- function(object, prep, nfolds=10, plot=FALSE, force.nnhazards=TRUE
                         nitimebasis=nitimebasis,
                         qpoints=qpoints)
 
-    prep.constrainst <- survprep(tte=tte,
-                                delta=prep$delta,
-                                X=as.matrix(prep$X),
-                                model.scale=prep$model.scale,
-                                time.scale=prep$time.scale,
-                                spline.type=prep$spline.type,
-                                ntimebasis=ntimebasis,
-                                time.knots=prep.cv$knots,
-                                tv=prep$tv,
-                                nitimebasis=nitimebasis,
-                                itime.knots=prep.cv$iknots,
-                                qpoints=qpoints,
-                                scales=prep.cv$scales,
-                                shifts=prep.cv$shifts)
-
     if(prep$model.scale == "logHazard" & force.nnhazards){
+      prep.constrainst <- survprep(tte=tte,
+                                   delta=prep$delta,
+                                   X=as.matrix(prep$X),
+                                   model.scale=prep$model.scale,
+                                   time.scale=prep$time.scale,
+                                   spline.type=prep$spline.type,
+                                   ntimebasis=ntimebasis,
+                                   time.knots=prep.cv$knots,
+                                   tv=prep$tv,
+                                   nitimebasis=nitimebasis,
+                                   itime.knots=prep.cv$iknots,
+                                   qpoints=qpoints,
+                                   scales=prep.cv$scales,
+                                   shifts=prep.cv$shifts)
       broad.Xd <- as.matrix(prep.constrainst$dmm.scaled$d)
       cv <- regsurv(prep=prep.cv, penpars=mod$penpars, l1l2=mod$l1l2, groups=mod$groups, lambda.grid=mod$lambda.grid,
                     force.nnhazards=mod$force.nnhazards, maxit=maxit, cv.constraint=broad.Xd, feastol=feastol)
