@@ -172,7 +172,7 @@ survprep <- function(tte, delta, X,
 
   if(model.scale == "loghazard"){
     # Gauss-Legendre weights and evaluation points for the log hazard
-    rule <- legendre.quadrature.rules(qpoints)[[qpoints]]
+    rule <- gaussquad::legendre.quadrature.rules(qpoints)[[qpoints]]
 
     if(time.scale == "time"){
       glsbi <- lapply(1:nrow(X), function(i)
