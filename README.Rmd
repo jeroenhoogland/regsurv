@@ -1,0 +1,106 @@
+---
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# regsurv
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of **regsurv** is to aid in parametric survival model development in settings where regularization is required. It provides access to flexible log hazard and log cumulative hazard modeling based where the baseline (cumulative) hazard is modeled by means of restricted cubic splines. The main functions for data preparation, model fitting, cross-validation, and prediction are illustrated is this document. First of all however, let's install the package.
+
+## Installation
+
+You can install the development version of **regsurv** from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("jeroenhoogland/regsurv")
+```
+
+## Example
+
+Documentation is available for all functions and can be accessed using `?` followed by the function name. For instance, `?regsurv` will provide the documentation for the `regurv()` function. 
+
+A basic analysis example follows below:
+
+```{r example}
+library(regsurv) # load the package
+
+head(simdata) # tte data with 9 covariates
+simdata <- simdata[1:100, ] # 100 cases
+
+# prepare the data for model fitting
+prep <- survprep(tte=simdata$eventtime,
+                 delta=simdata$status,
+                 X=as.matrix(simdata[ ,grep("x", names(simdata))]),
+                 model.scale="loghazard",
+                 time.scale="logtime",
+                 spline.type="rcs",
+                 ntimebasis=4,
+                 qpoints=9)
+```
+
+Note that the covariate data argument required matrix format. The argument `ntimebasis` specifies the number of basis columns for the restricted cubic spline, and the `qpoints` specifies the number of quadrature points for the Gauss-Legendre numerical integration required to evaluate the log-likelihood. 
+
+Among other things, `survprep()` creates the model matrix (scaled by default), which can be viewed using
+
+```{r}
+head(prep$mm$d) # columns of the model matrix (scaled by default)
+prep$which.param # helper to see which parameters relate to 
+# baseline (cumulative) hazard [[1]], main effects [[2]], and 
+# time-varying effects [[3]] (corresponding to prep$mm$d)
+```
+
+Model fitting is performed using `resurv()`. First however, the desired penalty needs to be specified. This is done by specification of the parameters that should (1) and should not (0) be penalized using the `penpars` argument, and a specification of the type of penalty using the `l12` argument (0 for ridge, 1 for lasso, in between for elastic net).
+
+```{r}
+# For instance, penalize the main effects with a lasso penalty:
+penpars <- c(rep(0, length(prep$which.param[[1]])), 
+             rep(1, length(prep$which.param[[2]])))
+l1l2 <- rep(1, 14)
+
+# fit model over the default lambda grid
+mod <- regsurv(prep, penpars, l1l2)
+plot(mod) # for non-baseline parameters, original scale
+plot(mod, incl.baseline = TRUE, scaled.betas = TRUE) # include baseline parameters (dotted), 
+# plotting coefficients on for the scaled data.
+```
+
+Subsequently, 5-fold cross-validation can be performed using `cv.regsurv()`
+
+```{r}
+set.seed(123)
+cv <- cv.regsurv(mod, prep, nfolds = 5, plot=TRUE)
+```
+
+The dotted line shows `cv$lambda.min`, the lambda value minimizing the deviance. 
+
+Coefficients at lambda.min can be derived using
+
+```{r}
+# ?coef.regsurv
+round(coef(mod, s = cv$lambda.min), 9)
+```
+
+Predictions can be derived using `predict()`
+
+```{r}
+# ?predict.regsurv
+pred <- predict(mod, prep, 
+        lambda.index = cv$lambda.min.index, 
+        type = "surv")
+plot(pred ~ simdata$eventtime, ylab="Shat", xlab="time to event")
+```
+
