@@ -109,6 +109,19 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
     lasso.index.plus <- which(prob_data$data$G@x == pi)
     lasso.index.min <- which(prob_data$data$G@x == -pi)
 
+    if(any(l1l2!=0 & l1l2!=1)){
+      elpars <- l1l2[l1l2!=0 & l1l2!=1]
+      if(!all(elpars == elpars[1])){
+        stop("Heterogeneous elastic net parameters not yet supported")
+      }
+      elpars <- unique(elpars)
+    } else {
+      elpars <- NULL
+    }
+    elastic.index <- which(prob_data$data$G@x %in% (-2 * sqrt(pi * elpars)))
+    elastic.index.plus <- which(prob_data$data$G@x %in% (pi * elpars))
+    elastic.index.min <- which(prob_data$data$G@x %in% (-pi * elpars))
+
     sol <- list()
     if(is.null(lambda.grid)){
       lambda.grid <- exp(lambda.init)
@@ -118,6 +131,9 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
         prob_data$data$G@x[ridge.index] <- -2*sqrt(lambda.grid[i])
         prob_data$data$G@x[lasso.index.plus] <- lambda.grid[i]
         prob_data$data$G@x[lasso.index.min] <- -lambda.grid[i]
+        prob_data$data$G@x[elastic.index] <- -2*sqrt(lambda.grid[i]*elpars)
+        prob_data$data$G@x[elastic.index.plus] <- lambda.grid[i]*elpars
+        prob_data$data$G@x[elastic.index.min] <- -lambda.grid[i]*elpars
         solver_output <- ECOSolveR::ECOS_csolve(c = prob_data$data$c,
                                                 G=  prob_data$data$G,
                                                 h = prob_data$data$h,
@@ -143,11 +159,16 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
             print(paste0("solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           if(is.null(groups)){
-            cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+            cont <- !all(all(abs(betahat[penpars & l1l2==1]) < 1e-8),
+                         all(abs(betahat[penpars & l1l2==0]) < 1e-2),
+                         all(abs(betahat[penpars & l1l2!=0 & l1l2!=1]) < 1e-2))
           } else {
             pure.ridge.pars <- betahat[unlist(groups[penpars & l1l2==0])]
-            lasso.pars <- betahat[unlist(groups[penpars & l1l2!=0])]
-            cont <- !all(all(abs(lasso.pars) < 1e-8), all(abs(pure.ridge.pars) < 1e-2))
+            lasso.pars <- betahat[unlist(groups[penpars & l1l2==1])]
+            elastic.pars <- betahat[unlist(groups[penpars & l1l2!=0 & l1l2!=1])]
+            cont <- !all(all(abs(lasso.pars) < 1e-8),
+                         all(abs(pure.ridge.pars) < 1e-2),
+                         all(abs(elastic.pars) < 1e-2))
           }
         }
         if(cont){
@@ -160,6 +181,9 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
         prob_data$data$G@x[ridge.index] <- -2*sqrt(lambda.grid[i])
         prob_data$data$G@x[lasso.index.plus] <- lambda.grid[i]
         prob_data$data$G@x[lasso.index.min] <- -lambda.grid[i]
+        prob_data$data$G@x[elastic.index] <- -2*sqrt(lambda.grid[i]*elpars)
+        prob_data$data$G@x[elastic.index.plus] <- lambda.grid[i]*elpars
+        prob_data$data$G@x[elastic.index.min] <- -lambda.grid[i]*elpars
         solver_output <- ECOSolveR::ECOS_csolve(c = prob_data$data$c,
                                                 G=  prob_data$data$G,
                                                 h = prob_data$data$h,
@@ -236,6 +260,19 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
     lasso.index.plus <- which(prob_data$data$G@x == pi)
     lasso.index.min <- which(prob_data$data$G@x == -pi)
 
+    if(any(l1l2!=0 & l1l2!=1)){
+      elpars <- l1l2[l1l2!=0 & l1l2!=1]
+      if(!all(elpars == elpars[1])){
+        stop("Heterogeneous elastic net parameters not yet supported")
+      }
+      elpars <- unique(elpars)
+    } else {
+      elpars <- NULL
+    }
+    elastic.index <- which(prob_data$data$G@x %in% (-2 * sqrt(pi * elpars)))
+    elastic.index.plus <- which(prob_data$data$G@x %in% (pi * elpars))
+    elastic.index.min <- which(prob_data$data$G@x %in% (-pi * elpars))
+
     sol <- list()
     if(is.null(lambda.grid)){
       lambda.grid <- exp(lambda.init)
@@ -245,6 +282,9 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
         prob_data$data$G@x[ridge.index] <- -2*sqrt(lambda.grid[i])
         prob_data$data$G@x[lasso.index.plus] <- lambda.grid[i]
         prob_data$data$G@x[lasso.index.min] <- -lambda.grid[i]
+        prob_data$data$G@x[elastic.index] <- -2*sqrt(lambda.grid[i]*elpars)
+        prob_data$data$G@x[elastic.index.plus] <- lambda.grid[i]*elpars
+        prob_data$data$G@x[elastic.index.min] <- -lambda.grid[i]*elpars
         solver_output <- ECOSolveR::ECOS_csolve(c = prob_data$data$c,
                                                 G=  prob_data$data$G,
                                                 h = prob_data$data$h,
@@ -270,11 +310,16 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
             print(paste0("solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           if(is.null(groups)){
-            cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+            cont <- !all(all(abs(betahat[penpars & l1l2==1]) < 1e-8),
+                         all(abs(betahat[penpars & l1l2==0]) < 1e-2),
+                         all(abs(betahat[penpars & l1l2!=0 & l1l2!=1]) < 1e-2))
           } else {
             pure.ridge.pars <- betahat[unlist(groups[penpars & l1l2==0])]
-            lasso.pars <- betahat[unlist(groups[penpars & l1l2!=0])]
-            cont <- !all(all(abs(lasso.pars) < 1e-8), all(abs(pure.ridge.pars) < 1e-2))
+            lasso.pars <- betahat[unlist(groups[penpars & l1l2==1])]
+            elastic.pars <- betahat[unlist(groups[penpars & l1l2!=0 & l1l2!=1])]
+            cont <- !all(all(abs(lasso.pars) < 1e-8),
+                         all(abs(pure.ridge.pars) < 1e-2),
+                         all(abs(elastic.pars) < 1e-2))
           }
         }
         if(cont){
@@ -288,6 +333,9 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
         prob_data$data$G@x[ridge.index] <- -2*sqrt(lambda.grid[i])
         prob_data$data$G@x[lasso.index.plus] <- lambda.grid[i]
         prob_data$data$G@x[lasso.index.min] <- -lambda.grid[i]
+        prob_data$data$G@x[elastic.index] <- -2*sqrt(lambda.grid[i]*elpars)
+        prob_data$data$G@x[elastic.index.plus] <- lambda.grid[i]*elpars
+        prob_data$data$G@x[elastic.index.min] <- -lambda.grid[i]*elpars
         solver_output <- ECOSolveR::ECOS_csolve(c = prob_data$data$c,
                                                 G=  prob_data$data$G,
                                                 h = prob_data$data$h,
@@ -313,11 +361,16 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
             print(paste0("solved for lambda = exp(", log(lambda.grid[i]), ")"))
           }
           if(is.null(groups)){
-            cont <- !all(all(abs(betahat[penpars & l1l2]) < 1e-8), all(abs(betahat[penpars & !l1l2]) < 1e-2))
+            cont <- !all(all(abs(betahat[penpars & l1l2==1]) < 1e-8),
+                         all(abs(betahat[penpars & l1l2==0]) < 1e-2),
+                         all(abs(betahat[penpars & l1l2!=0 & l1l2!=1]) < 1e-2))
           } else {
             pure.ridge.pars <- betahat[unlist(groups[penpars & l1l2==0])]
-            lasso.pars <- betahat[unlist(groups[penpars & l1l2!=0])]
-            cont <- !all(all(abs(lasso.pars) < 1e-8), all(abs(pure.ridge.pars) < 1e-2))
+            lasso.pars <- betahat[unlist(groups[penpars & l1l2==1])]
+            elastic.pars <- betahat[unlist(groups[penpars & l1l2!=0 & l1l2!=1])]
+            cont <- !all(all(abs(lasso.pars) < 1e-8),
+                         all(abs(pure.ridge.pars) < 1e-2),
+                         all(abs(elastic.pars) < 1e-2))
           }
         }
         if(solver_output$retcodes["exitFlag"] != 0){
