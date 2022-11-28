@@ -14,8 +14,8 @@ coef.regsurv <- function(object, s=NULL, ...){
   }
 
   if(!is.null(s)){
-    return(object$betahat[ ,which(object$lambda.grid == s)])
+    return(round(object$betahat[ ,which(object$lambda.grid == s)], 9))
   } else {
-    return(object$betahat)
+    return(round(object$betahat, 9))
   }
 }
