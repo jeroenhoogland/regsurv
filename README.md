@@ -123,13 +123,13 @@ mod <- regsurv(prep, penpars, l1l2)
 plot(mod) # for non-baseline parameters, original scale
 ```
 
-<img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-3-1.png" width="90%" />
 
 ``` r
 plot(mod, incl.baseline = TRUE, scaled.betas = TRUE) # include baseline parameters (dotted), 
 ```
 
-<img src="man/figures/README-unnamed-chunk-3-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-3-2.png" width="90%" />
 
 ``` r
 # plotting coefficients on for the scaled data.
@@ -143,7 +143,7 @@ set.seed(123)
 cv <- cv.regsurv(mod, prep, nfolds = 5, plot=TRUE)
 ```
 
-<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-4-1.png" width="90%" />
 
 The dotted line shows `cv$lambda.min`, the lambda value minimizing the
 deviance.
@@ -152,13 +152,13 @@ Coefficients at lambda.min can be derived using
 
 ``` r
 # ?coef.regsurv
-round(coef(mod, s = cv$lambda.min), 9)
-#>           int        basis1        basis2        basis3        basis4 
-#>  -1.658864506   1.588970099  -1.373975635  10.618679221 -11.860232521 
-#>            x1            x2            x3            x4            x5 
-#>   0.485101863   0.635558001   0.306369521  -0.338478142   0.000000000 
-#>            x6            x7            x8            x9 
-#>   0.000000000  -0.076997889  -0.000000001  -0.033853160
+coef(mod, s = cv$lambda.min)
+#>          int       basis1       basis2       basis3       basis4           x1 
+#>  -1.65886451   1.58897010  -1.37397564  10.61867922 -11.86023252   0.48510186 
+#>           x2           x3           x4           x5           x6           x7 
+#>   0.63555800   0.30636952  -0.33847814   0.00000000   0.00000000  -0.07699789 
+#>           x8           x9 
+#>   0.00000000  -0.03385316
 ```
 
 Predictions can be derived using `predict()`
@@ -171,4 +171,4 @@ pred <- predict(mod, prep,
 plot(pred ~ simdata$eventtime, ylab="Shat", xlab="time to event")
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-6-1.png" width="90%" />
