@@ -10,6 +10,7 @@
 #'   equal to exp(-6) (default) up to the moment where all lasso penalized parameters have disappeared and all the absolute
 #'   value of all ridge penalized parameters is < 1e-2.
 #' @param lambda.init logarithm of the smallest lambda penalty in the grid. Defaults to -6. Only used when lambda.grid is NULL
+#' @param lambda.incr lambda increments taken from lambda.init (on the log scale); defaults to 0.5
 #' @param force.nnhazards if TRUE, forces non-negative hazards / monotone non-decreasing cumulative hazards (only applicable for log
 #'   cumulative hazard models)
 #' @param print if TRUE, prints progress (a line for each lambda for which the model was optimized)
@@ -60,7 +61,8 @@
 #' # fit model over the default lambda grid
 #' mod <- regsurv(prep, penpars, l1l2, print=TRUE)
 #' plot(mod)
-regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.init=-6, force.nnhazards=TRUE,
+regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL,
+                    lambda.init=-6, lambda.incr=.5, force.nnhazards=TRUE,
                     print=FALSE, maxit=100L, feastol=1e-08, ...){
 
   if(class(prep) != "survprep"){
@@ -172,7 +174,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
           }
         }
         if(cont){
-          lambda.grid <- c(lambda.grid, exp(lambda.init+i*.25))
+          lambda.grid <- c(lambda.grid, exp(lambda.init+i*lambda.incr))
           i <- i+1
         }
       }
@@ -323,7 +325,7 @@ regsurv <- function(prep, penpars, l1l2, groups=NULL, lambda.grid=NULL, lambda.i
           }
         }
         if(cont){
-          lambda.grid <- c(lambda.grid, exp(lambda.init+i*.25))
+          lambda.grid <- c(lambda.grid, exp(lambda.init+i*lambda.incr))
           i <- i+1
         }
       }

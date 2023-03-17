@@ -11,6 +11,7 @@ regsurv(
   groups = NULL,
   lambda.grid = NULL,
   lambda.init = -6,
+  lambda.incr = 0.5,
   force.nnhazards = TRUE,
   print = FALSE,
   maxit = 100L,
@@ -34,6 +35,8 @@ equal to exp(-6) (default) up to the moment where all lasso penalized parameters
 value of all ridge penalized parameters is < 1e-2.}
 
 \item{lambda.init}{logarithm of the smallest lambda penalty in the grid. Defaults to -6. Only used when lambda.grid is NULL}
+
+\item{lambda.incr}{lambda increments taken from lambda.init (on the log scale); defaults to 0.5}
 
 \item{force.nnhazards}{if TRUE, forces non-negative hazards / monotone non-decreasing cumulative hazards (only applicable for log
 cumulative hazard models)}
